@@ -88,6 +88,10 @@
     <a href="{% url 'invoice_pdf' invoice.pk %}" class="btn btn-primary btn-sm">Download PDF</a>
     <a href="{% url 'clients_detail' invoice.client.pk %}" class="btn btn-outline-secondary btn-sm">View Client</a>
     <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm">Back to Dashboard</a>
+    <form action="{% url 'invoice_delete' invoice.pk %}" method="post" onsubmit="return confirm('Delete this invoice? This action cannot be undone.');">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger btn-sm">Delete Invoice</button>
+    </form>
   </div>
 </div>
 
@@ -279,6 +283,11 @@
     flex-wrap: wrap;
     gap: 0.75rem;
     justify-content: center;
+    align-items: center;
+  }
+
+  .actions form {
+    margin: 0;
   }
 
   @media (max-width: 768px) {
