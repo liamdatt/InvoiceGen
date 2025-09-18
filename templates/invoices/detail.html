@@ -6,7 +6,8 @@
   <div class="invoice-paper">
     <div class="invoice-header">
       <div class="brand-block">
-        <img src="{% static 'logo.jpeg' %}" alt="Stepmath Auto Limited" class="brand-logo">
+        {% static 'logo.jpeg' as default_logo %}
+        <img src="{{ logo_src|default:default_logo }}" alt="Stepmath Auto Limited" class="brand-logo">
         <div class="brand-text">
           <div class="brand-name">STEPMATH AUTO LIMITED</div>
           <div class="brand-meta">(Certified Car Dealer)</div>
@@ -83,16 +84,18 @@
     </div>
   </div>
 
-  <div class="actions mt-4">
-    <a href="{% url 'invoice_update' invoice.pk %}" class="btn btn-outline-secondary btn-sm">Edit Invoice</a>
-    <a href="{% url 'invoice_pdf' invoice.pk %}" class="btn btn-primary btn-sm">Download PDF</a>
-    <a href="{% url 'clients_detail' invoice.client.pk %}" class="btn btn-outline-secondary btn-sm">View Client</a>
-    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm">Back to Dashboard</a>
-    <form action="{% url 'invoice_delete' invoice.pk %}" method="post" onsubmit="return confirm('Delete this invoice? This action cannot be undone.');">
-      {% csrf_token %}
-      <button type="submit" class="btn btn-danger btn-sm">Delete Invoice</button>
-    </form>
-  </div>
+  {% if not for_pdf %}
+    <div class="actions mt-4">
+      <a href="{% url 'invoice_update' invoice.pk %}" class="btn btn-outline-secondary btn-sm">Edit Invoice</a>
+      <a href="{% url 'invoice_pdf' invoice.pk %}" class="btn btn-primary btn-sm">Download PDF</a>
+      <a href="{% url 'clients_detail' invoice.client.pk %}" class="btn btn-outline-secondary btn-sm">View Client</a>
+      <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm">Back to Dashboard</a>
+      <form action="{% url 'invoice_delete' invoice.pk %}" method="post" onsubmit="return confirm('Delete this invoice? This action cannot be undone.');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger btn-sm">Delete Invoice</button>
+      </form>
+    </div>
+  {% endif %}
 </div>
 
 <style>
