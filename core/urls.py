@@ -13,6 +13,7 @@ urlpatterns = [
     path('clients/<int:client_pk>/invoices/new/', views.invoice_create, name='invoice_create'),
     path('invoices/<int:pk>/', views.invoice_detail, name='invoice_detail'),
     path('invoices/<int:pk>/edit/', views.invoice_update, name='invoice_update'),
+    path('invoices/<int:pk>/delete/', views.invoice_delete, name='invoice_delete'),
     path('invoices/<int:pk>/pdf/', views.invoice_pdf, name='invoice_pdf'),
 ]
 

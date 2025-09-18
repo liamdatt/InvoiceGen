@@ -111,6 +111,18 @@ def invoice_update(request, pk: int):
 
 
 @login_required
+def invoice_delete(request, pk: int):
+    invoice = get_object_or_404(Invoice, pk=pk)
+    client_pk = invoice.client_id
+    if request.method == 'POST':
+        if invoice.pdf_file:
+            invoice.pdf_file.delete(save=False)
+        invoice.delete()
+        return redirect('clients_detail', pk=client_pk)
+    return redirect('invoice_detail', pk=invoice.pk)
+
+
+@login_required
 def invoice_pdf(request, pk: int):
     invoice = get_object_or_404(Invoice, pk=pk, invoice_type=Invoice.Type.GENERAL)
     force = request.GET.get('force') == '1'
