@@ -2,9 +2,15 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import render, redirect, get_object_or_404
-from django.forms import modelform_factory, inlineformset_factory
 from django.http import FileResponse, HttpResponse
-from .models import Client, Invoice, InvoiceItem
+from .forms import (
+    ClientForm,
+    INVOICE_GENERAL_FIELDS,
+    INVOICE_PROFORMA_FIELDS,
+    InvoiceForm,
+    ItemFormSet,
+)
+from .models import Client, Invoice
 
 
 @login_required
@@ -28,9 +34,8 @@ def signup(request):
     return render(request, 'auth/signup.html', {'form': form})
 
 
-ClientForm = modelform_factory(Client, fields=['name', 'email', 'phone', 'address'])
-InvoiceForm = modelform_factory(Invoice, fields=['client', 'invoice_type', 'vehicle', 'lic_no', 'chassis_no', 'date'])
-ItemFormSet = inlineformset_factory(Invoice, InvoiceItem, fields=['description', 'labour_cost', 'parts_cost'], extra=1, can_delete=True)
+GENERAL_FIELDS = list(INVOICE_GENERAL_FIELDS)
+PROFORMA_FIELDS = list(INVOICE_PROFORMA_FIELDS)
 
 
 @login_required
@@ -85,7 +90,15 @@ def invoice_create(request, client_pk: int):
     else:
         form = InvoiceForm(initial={'client': client, 'invoice_type': Invoice.Type.GENERAL})
         formset = ItemFormSet(prefix='items')
-    return render(request, 'invoices/form.html', {'form': form, 'formset': formset, 'client': client, 'title': 'New Invoice'})
+    context = {
+        'form': form,
+        'formset': formset,
+        'client': client,
+        'title': 'New Invoice',
+        'general_fields': GENERAL_FIELDS,
+        'proforma_fields': PROFORMA_FIELDS,
+    }
+    return render(request, 'invoices/form.html', context)
 
 
 @login_required
@@ -107,7 +120,15 @@ def invoice_update(request, pk: int):
     else:
         form = InvoiceForm(instance=invoice)
         formset = ItemFormSet(instance=invoice, prefix='items')
-    return render(request, 'invoices/form.html', {'form': form, 'formset': formset, 'client': invoice.client, 'title': 'Edit Invoice'})
+    context = {
+        'form': form,
+        'formset': formset,
+        'client': invoice.client,
+        'title': 'Edit Invoice',
+        'general_fields': GENERAL_FIELDS,
+        'proforma_fields': PROFORMA_FIELDS,
+    }
+    return render(request, 'invoices/form.html', context)
 
 
 @login_required
@@ -124,10 +145,17 @@ def invoice_delete(request, pk: int):
 
 @login_required
 def invoice_pdf(request, pk: int):
-    invoice = get_object_or_404(Invoice, pk=pk, invoice_type=Invoice.Type.GENERAL)
+    invoice = get_object_or_404(Invoice, pk=pk)
     force = request.GET.get('force') == '1'
-    if force or not invoice.pdf_file:
-        invoice.generate_general_pdf(overwrite=True)
+    suffix = f"-{invoice.invoice_type.lower()}"
+    needs_generation = force or not invoice.pdf_file or not invoice.pdf_file.name.endswith(f"{suffix}.pdf")
+    if invoice.invoice_type == Invoice.Type.GENERAL:
+        if needs_generation:
+            invoice.generate_general_pdf(overwrite=True)
+    else:
+        if needs_generation:
+            invoice.generate_proforma_pdf(overwrite=True)
     if not invoice.pdf_file:
         return HttpResponse("Failed to generate invoice PDF.", status=500)
-    return FileResponse(open(invoice.pdf_file.path, 'rb'), as_attachment=True, filename=f"invoice-{invoice.pk}.pdf")
+    filename = f"invoice-{invoice.pk}-{invoice.invoice_type.lower()}.pdf"
+    return FileResponse(open(invoice.pdf_file.path, 'rb'), as_attachment=True, filename=filename)
