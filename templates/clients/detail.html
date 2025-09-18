@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+{% block content %}
+<!-- Header Section -->
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 20px;">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center">
+            <div class="avatar me-4" style="width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.5rem;">
+              {{ client.name|first|upper }}
+            </div>
+            <div>
+              <h1 class="h3 fw-bold mb-2" style="color: white;">{{ client.name }}</h1>
+              <p class="mb-0" style="color: rgba(255,255,255,0.9);">
+                <i class="bi bi-person me-2"></i>Client Profile
+              </p>
+            </div>
+          </div>
+          <div class="d-flex gap-3">
+            <a class="btn btn-outline-light" href="{% url 'clients_update' client.pk %}" style="border-radius: 10px;">
+              <i class="bi bi-pencil me-2"></i>Edit Client
+            </a>
+            <a class="btn btn-warning" href="{% url 'invoice_create' client.pk %}" style="border-radius: 10px;">
+              <i class="bi bi-file-earmark-plus me-2"></i>New Invoice
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Client Details -->
+  <div class="col-lg-4">
+    <div class="card h-100" style="border-radius: 16px;">
+      <div class="card-header" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border-radius: 16px 16px 0 0 !important;">
+        <h5 class="mb-0 fw-bold">
+          <i class="bi bi-info-circle me-2" style="color: #667eea;"></i>Client Information
+        </h5>
+      </div>
+      <div class="card-body p-4">
+        <div class="mb-4">
+          <div class="small text-muted mb-2">Email Address</div>
+          {% if client.email %}
+            <div class="d-flex align-items-center">
+              <i class="bi bi-envelope me-2 text-primary"></i>
+              <a href="mailto:{{ client.email }}" class="fw-semibold text-decoration-none">{{ client.email }}</a>
+            </div>
+          {% else %}
+            <div class="text-muted">
+              <i class="bi bi-envelope me-2"></i>No email provided
+            </div>
+          {% endif %}
+        </div>
+        
+        <div class="mb-4">
+          <div class="small text-muted mb-2">Phone Number</div>
+          {% if client.phone %}
+            <div class="d-flex align-items-center">
+              <i class="bi bi-telephone me-2 text-primary"></i>
+              <a href="tel:{{ client.phone }}" class="fw-semibold text-decoration-none">{{ client.phone }}</a>
+            </div>
+          {% else %}
+            <div class="text-muted">
+              <i class="bi bi-telephone me-2"></i>No phone provided
+            </div>
+          {% endif %}
+        </div>
+        
+        <div class="mb-0">
+          <div class="small text-muted mb-2">Address</div>
+          {% if client.address %}
+            <div class="d-flex align-items-start">
+              <i class="bi bi-geo-alt me-2 text-primary mt-1"></i>
+              <div class="fw-semibold">{{ client.address|linebreaksbr }}</div>
+            </div>
+          {% else %}
+            <div class="text-muted">
+              <i class="bi bi-geo-alt me-2"></i>No address provided
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invoices Section -->
+  <div class="col-lg-8">
+    <div class="card" style="border-radius: 16px;">
+      <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border-radius: 16px 16px 0 0 !important;">
+        <div>
+          <h5 class="mb-0 fw-bold">
+            <i class="bi bi-file-earmark-text me-2" style="color: #667eea;"></i>Client Invoices
+          </h5>
+          <small class="text-muted">{{ invoices|length }} invoice{{ invoices|length|pluralize }} for this client</small>
+        </div>
+        <a class="btn btn-primary btn-sm" href="{% url 'invoice_create' client.pk %}" style="border-radius: 10px;">
+          <i class="bi bi-plus me-1"></i>New Invoice
+        </a>
+      </div>
+      <div class="card-body p-0">
+        {% if invoices %}
+          <div class="list-group list-group-flush">
+            {% for inv in invoices %}
+              <div class="list-group-item" style="padding: 1.2rem 1.5rem;">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="flex-grow-1">
+                    <div class="d-flex align-items-center mb-2">
+                      <div class="invoice-icon me-3" style="width: 40px; height: 40px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white;">
+                        <i class="bi bi-file-earmark-text"></i>
+                      </div>
+                      <div>
+                        <h6 class="mb-1 fw-semibold">
+                          <a href="{% url 'invoice_detail' inv.pk %}" class="text-decoration-none">
+                            Invoice #{{ inv.pk }}
+                          </a>
+                        </h6>
+                        <div class="small text-muted">{{ inv.get_invoice_type_display }}</div>
+                      </div>
+                    </div>
+                    <div class="d-flex gap-3 small text-muted">
+                      <span><i class="bi bi-calendar3 me-1"></i>{{ inv.date }}</span>
+                      {% if inv.total %}
+                        <span><i class="bi bi-currency-dollar me-1"></i>${{ inv.total }}</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                  <div class="d-flex gap-2">
+                    <a class="btn btn-outline-primary btn-sm" href="{% url 'invoice_detail' inv.pk %}" style="border-radius: 8px;">
+                      <i class="bi bi-eye me-1"></i>View
+                    </a>
+                    <a class="btn btn-outline-secondary btn-sm" href="{% url 'invoice_pdf' inv.pk %}" style="border-radius: 8px;">
+                      <i class="bi bi-download me-1"></i>PDF
+                    </a>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-center py-5">
+            <i class="bi bi-file-earmark-plus" style="font-size: 4rem; color: #e5e7eb; margin-bottom: 1rem;"></i>
+            <h6 class="text-muted">No invoices yet</h6>
+            <p class="text-muted small">Create the first invoice for {{ client.name }}</p>
+            <a class="btn btn-primary" href="{% url 'invoice_create' client.pk %}" style="border-radius: 10px;">
+              <i class="bi bi-plus me-2"></i>Create First Invoice
+            </a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card" style="border-radius: 16px; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);">
+      <div class="card-body p-4">
+        <h6 class="fw-bold mb-3">
+          <i class="bi bi-lightning me-2" style="color: #667eea;"></i>Quick Actions
+        </h6>
+        <div class="d-flex gap-3 flex-wrap">
+          <a href="{% url 'clients_update' client.pk %}" class="btn btn-outline-primary" style="border-radius: 10px;">
+            <i class="bi bi-pencil me-2"></i>Edit Client
+          </a>
+          <a href="{% url 'invoice_create' client.pk %}" class="btn btn-primary" style="border-radius: 10px;">
+            <i class="bi bi-file-earmark-plus me-2"></i>New Invoice
+          </a>
+          <a href="{% url 'clients_list' %}" class="btn btn-outline-secondary" style="border-radius: 10px;">
+            <i class="bi bi-people me-2"></i>All Clients
+          </a>
+          <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary" style="border-radius: 10px;">
+            <i class="bi bi-house me-2"></i>Dashboard
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+

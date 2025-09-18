@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+{% block content %}
+<!-- Header Section -->
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card" style="background: var(--primary-gradient); color: white; border-radius: 25px; border: 1px solid rgba(255,255,255,0.2);">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h1 class="h3 fw-bold mb-2" style="color: white;">Invoice #{{ invoice.pk }}</h1>
+            <p class="mb-0" style="color: rgba(255,255,255,0.9);">
+              <i class="bi bi-building me-2"></i>{{ invoice.client.name }}
+            </p>
+          </div>
+          <div class="text-end">
+            <div class="mb-3">
+              <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-semibold">
+                {{ invoice.get_invoice_type_display }}
+              </span>
+            </div>
+            <div class="btn-group">
+              <a class="btn btn-light" href="{% url 'invoice_update' invoice.pk %}" style="border-radius: 10px 0 0 10px;">
+                <i class="bi bi-pencil me-2"></i>Edit
+              </a>
+              <a class="btn btn-warning" href="{% url 'invoice_pdf' invoice.pk %}" style="border-radius: 0 10px 10px 0;">
+                <i class="bi bi-download me-2"></i>Download PDF
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Invoice Details -->
+  <div class="col-lg-4">
+    <div class="card h-100" style="border-radius: 16px;">
+      <div class="card-header" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border-radius: 16px 16px 0 0 !important;">
+        <h5 class="mb-0 fw-bold">
+          <i class="bi bi-info-circle me-2" style="color: #667eea;"></i>Invoice Details
+        </h5>
+      </div>
+      <div class="card-body p-4">
+        <div class="mb-3">
+          <div class="small text-muted mb-1">Date</div>
+          <div class="fw-semibold">
+            <i class="bi bi-calendar3 me-2 text-primary"></i>{{ invoice.date }}
+          </div>
+        </div>
+        <div class="mb-3">
+          <div class="small text-muted mb-1">Vehicle</div>
+          <div class="fw-semibold">
+            <i class="bi bi-car-front me-2 text-primary"></i>{{ invoice.vehicle|default:"—" }}
+          </div>
+        </div>
+        <div class="mb-3">
+          <div class="small text-muted mb-1">License Number</div>
+          <div class="fw-semibold">
+            <i class="bi bi-hash me-2 text-primary"></i>{{ invoice.lic_no|default:"—" }}
+          </div>
+        </div>
+        <div class="mb-0">
+          <div class="small text-muted mb-1">Chassis Number</div>
+          <div class="fw-semibold">
+            <i class="bi bi-upc me-2 text-primary"></i>{{ invoice.chassis_no|default:"—" }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Items and Totals -->
+  <div class="col-lg-8">
+    <div class="card" style="border-radius: 16px;">
+      <div class="card-header" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border-radius: 16px 16px 0 0 !important;">
+        <h5 class="mb-0 fw-bold">
+          <i class="bi bi-list-ul me-2" style="color: #667eea;"></i>Invoice Items
+        </h5>
+      </div>
+      <div class="card-body p-0">
+        {% if invoice.items.all %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);">
+                <tr>
+                  <th class="border-0 fw-bold" style="padding: 1.2rem;">Description</th>
+                  <th class="border-0 fw-bold text-end" style="padding: 1.2rem;">Labour</th>
+                  <th class="border-0 fw-bold text-end" style="padding: 1.2rem;">Parts</th>
+                  <th class="border-0 fw-bold text-end" style="padding: 1.2rem;">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for it in invoice.items.all %}
+                  <tr style="transition: all 0.3s ease;">
+                    <td style="padding: 1.2rem; border-bottom: 1px solid #f3f4f6;">
+                      <div class="fw-semibold">{{ it.description }}</div>
+                    </td>
+                    <td class="text-end" style="padding: 1.2rem; border-bottom: 1px solid #f3f4f6;">
+                      <span class="fw-semibold text-success">${{ it.labour_cost }}</span>
+                    </td>
+                    <td class="text-end" style="padding: 1.2rem; border-bottom: 1px solid #f3f4f6;">
+                      <span class="fw-semibold text-info">${{ it.parts_cost }}</span>
+                    </td>
+                    <td class="text-end" style="padding: 1.2rem; border-bottom: 1px solid #f3f4f6;">
+                      <span class="fw-bold text-primary">${{ it.labour_cost|add:it.parts_cost }}</span>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- Totals Section -->
+          <div style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 2rem; border-radius: 0 0 16px 16px;">
+            <div class="row">
+              <div class="col-md-6 offset-md-6">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="fw-semibold">Labour Subtotal:</span>
+                  <span class="fw-bold text-success">${{ invoice.labour_subtotal }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="fw-semibold">Parts Subtotal:</span>
+                  <span class="fw-bold text-info">${{ invoice.parts_subtotal }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="fw-semibold">Subtotal:</span>
+                  <span class="fw-bold">${{ invoice.labour_subtotal|add:invoice.parts_subtotal }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <span class="fw-semibold">Plus 15% GCT:</span>
+                  <span class="fw-bold text-warning">${{ invoice.gct }}</span>
+                </div>
+                <hr style="margin: 1rem 0;">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="h5 fw-bold mb-0">Total Amount:</span>
+                  <span class="h4 fw-bold mb-0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                    ${{ invoice.total }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% else %}
+          <div class="text-center py-5">
+            <i class="bi bi-inbox" style="font-size: 4rem; color: #e5e7eb; margin-bottom: 1rem;"></i>
+            <h6 class="text-muted">No items added yet</h6>
+            <p class="text-muted small">Add items to this invoice to calculate totals</p>
+            <a class="btn btn-primary" href="{% url 'invoice_update' invoice.pk %}" style="border-radius: 10px;">
+              <i class="bi bi-plus me-2"></i>Add Items
+            </a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card" style="border-radius: 16px; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);">
+      <div class="card-body p-4">
+        <h6 class="fw-bold mb-3">
+          <i class="bi bi-lightning me-2" style="color: #667eea;"></i>Quick Actions
+        </h6>
+        <div class="d-flex gap-3 flex-wrap">
+          <a href="{% url 'invoice_update' invoice.pk %}" class="btn btn-outline-primary" style="border-radius: 10px;">
+            <i class="bi bi-pencil me-2"></i>Edit Invoice
+          </a>
+          <a href="{% url 'invoice_pdf' invoice.pk %}" class="btn btn-primary" style="border-radius: 10px;">
+            <i class="bi bi-download me-2"></i>Download PDF
+          </a>
+          <a href="{% url 'clients_detail' invoice.client.pk %}" class="btn btn-outline-secondary" style="border-radius: 10px;">
+            <i class="bi bi-building me-2"></i>View Client
+          </a>
+          <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary" style="border-radius: 10px;">
+            <i class="bi bi-house me-2"></i>Back to Dashboard
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
