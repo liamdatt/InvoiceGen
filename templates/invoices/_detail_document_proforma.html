@@ -4,8 +4,12 @@
   <div class="invoice-paper proforma">
     <div class="invoice-header">
       <div class="brand-block">
-        {% static 'logo.jpeg' as default_logo %}
-        <img src="{{ logo_src|default:default_logo }}" alt="Stepmath Auto Limited" class="brand-logo">
+        {% if for_pdf and logo_src %}
+          <img src="{{ logo_src }}" alt="Stepmath Auto Limited" class="brand-logo">
+        {% elif not for_pdf %}
+          {% static 'logo.jpeg' as logo_url %}
+          <img src="{{ logo_url }}" alt="Stepmath Auto Limited" class="brand-logo">
+        {% endif %}
         <div class="brand-text">
           <div class="brand-name">STEPMATH AUTO LIMITED</div>
           <div class="brand-meta">(Certified Car Dealer)</div>
@@ -89,8 +93,8 @@
 
     <div class="signature-block">
       <div class="signature-line"></div>
-      <div class="signature-name">ERROL DUHANEY</div>
-      <div class="signature-title">MANAGING DIRECTOR</div>
+      <div class="signature-name">STEPHEN DUHANEY</div>
+      <div class="signature-title">DIRECTOR</div>
     </div>
   </div>
 

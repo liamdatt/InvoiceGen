@@ -94,12 +94,24 @@ class Invoice(models.Model):
         ]
         logo_path = next((p for p in logo_candidates if p.exists()), None)
 
+        # Convert logo to data URL for reliable PDF embedding
+        logo_data_url = None
+        if logo_path and logo_path.exists():
+            try:
+                import base64
+                with open(logo_path, "rb") as f:
+                    logo_data = f.read()
+                    logo_data_url = f"data:image/jpeg;base64,{base64.b64encode(logo_data).decode()}"
+            except Exception:
+                # Fallback to file URI if base64 encoding fails
+                logo_data_url = logo_path.resolve().as_uri()
+
         html = render_to_string(
             template_name,
             {
                 "invoice": self,
                 "for_pdf": True,
-                "logo_src": logo_path.resolve().as_uri() if logo_path else None,
+                "logo_src": logo_data_url,
             },
         )
 
