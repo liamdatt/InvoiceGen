@@ -77,10 +77,13 @@
         </div>
         <div class="card-body p-4">
           {{ formset.management_form }}
-          <div id="items">
+          <div id="items" data-formset-prefix="{{ formset.prefix }}">
             {% for f in formset %}
-              <div class="item-row p-3 mb-3" style="background: #f8fafc; border-radius: 12px; border: 2px solid #e5e7eb;">
+              <div class="item-row p-3 mb-3" style="background: #f8fafc; border-radius: 12px; border: 2px solid #e5e7eb;" data-form-index="{{ forloop.counter0 }}">
                 <div class="row g-3 align-items-end">
+                  {% for hidden in f.hidden_fields %}
+                    {{ hidden }}
+                  {% endfor %}
                   <div class="col-md-6">
                     <label class="form-label fw-semibold">
                       <i class="bi bi-text-left me-1"></i>Description
@@ -119,14 +122,56 @@
               </div>
             {% endfor %}
           </div>
-          
-          {% if not formset %}
-            <div class="text-center py-4" id="no-items-message">
-              <i class="bi bi-inbox" style="font-size: 3rem; color: #e5e7eb; margin-bottom: 1rem;"></i>
-              <h6 class="text-muted">No items added yet</h6>
-              <p class="text-muted small">Click "Add Item" to start building your invoice</p>
+
+          <template id="empty-item-form">
+            <div class="item-row p-3 mb-3" style="background: #f8fafc; border-radius: 12px; border: 2px solid #e5e7eb;" data-form-index="__prefix__">
+              <div class="row g-3 align-items-end">
+                {% for hidden in formset.empty_form.hidden_fields %}
+                  {{ hidden }}
+                {% endfor %}
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-text-left me-1"></i>Description
+                  </label>
+                  {{ formset.empty_form.description }}
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-tools me-1"></i>Labour Cost
+                  </label>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    {{ formset.empty_form.labour_cost }}
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-gear me-1"></i>Parts Cost
+                  </label>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    {{ formset.empty_form.parts_cost }}
+                  </div>
+                </div>
+                {% if formset.empty_form.DELETE %}
+                  <div class="col-12">
+                    <div class="form-check mt-2">
+                      {{ formset.empty_form.DELETE }}
+                      <label class="form-check-label text-danger fw-semibold">
+                        <i class="bi bi-trash me-1"></i>Delete this item
+                      </label>
+                    </div>
+                  </div>
+                {% endif %}
+              </div>
             </div>
-          {% endif %}
+          </template>
+          
+          <div class="text-center py-4 d-none" id="no-items-message">
+            <i class="bi bi-inbox" style="font-size: 3rem; color: #e5e7eb; margin-bottom: 1rem;"></i>
+            <h6 class="text-muted">No items added yet</h6>
+            <p class="text-muted small">Click "Add Item" to start building your invoice</p>
+          </div>
         </div>
       </div>
     </div>
@@ -158,34 +203,26 @@
 </form>
 
 <script>
-  // Auto-apply Bootstrap classes
-  (function(){
-    document.querySelectorAll('input:not([type="checkbox"]), select, textarea').forEach(function(el){
-      if(!el.classList.contains('form-control')) {
+  function applyBootstrapStyles(root = document) {
+    root.querySelectorAll('input:not([type="checkbox"]), select, textarea').forEach(function(el) {
+      if (!el.classList.contains('form-control')) {
         el.classList.add('form-control');
       }
     });
-    
-    // Style checkboxes
-    document.querySelectorAll('input[type="checkbox"]').forEach(function(el){
-      el.classList.add('form-check-input');
-    });
-  })();
 
-  // Add item functionality (placeholder - you might need to implement proper Django formset handling)
-  function addItem() {
-    // This would need proper Django formset JavaScript implementation
-    console.log('Add item functionality would be implemented here');
-    // For now, just show a message
-    alert('To add more items, you can modify the formset in the Django view or use JavaScript formset libraries.');
+    root.querySelectorAll('input[type="checkbox"]').forEach(function(el) {
+      if (!el.classList.contains('form-check-input')) {
+        el.classList.add('form-check-input');
+      }
+    });
   }
 
-  // Form validation feedback
-  document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('form');
-    const inputs = form.querySelectorAll('input, select, textarea');
-    
-    inputs.forEach(input => {
+  function attachValidationHandlers(root = document) {
+    root.querySelectorAll('input, select, textarea').forEach(function(input) {
+      if (input.dataset.validationBound === '1') {
+        return;
+      }
+
       input.addEventListener('input', function() {
         if (this.checkValidity()) {
           this.classList.remove('is-invalid');
@@ -195,6 +232,69 @@
           this.classList.add('is-invalid');
         }
       });
+
+      input.dataset.validationBound = '1';
+    });
+  }
+
+  function toggleEmptyState() {
+    const itemsContainer = document.getElementById('items');
+    const message = document.getElementById('no-items-message');
+    if (!message) {
+      return;
+    }
+
+    const activeRows = Array.from(itemsContainer.querySelectorAll('.item-row')).filter(row => {
+      const deleteField = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+      return !deleteField || !deleteField.checked;
+    }).length;
+
+    if (activeRows === 0) {
+      message.classList.remove('d-none');
+    } else {
+      message.classList.add('d-none');
+    }
+  }
+
+  function addItem() {
+    const itemsContainer = document.getElementById('items');
+    const prefix = itemsContainer.dataset.formsetPrefix;
+    const totalFormsInput = document.querySelector(`#id_${prefix}-TOTAL_FORMS`);
+    const template = document.getElementById('empty-item-form');
+
+    if (!totalFormsInput || !template) {
+      console.error('Formset configuration is missing.');
+      return;
+    }
+
+    const formIndex = parseInt(totalFormsInput.value, 10);
+    const templateHtml = template.innerHTML.replace(/__prefix__/g, formIndex);
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = templateHtml.trim();
+    const newForm = wrapper.firstElementChild;
+
+    totalFormsInput.value = formIndex + 1;
+    itemsContainer.appendChild(newForm);
+
+    applyBootstrapStyles(newForm);
+    attachValidationHandlers(newForm);
+    toggleEmptyState();
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    applyBootstrapStyles();
+    attachValidationHandlers();
+    toggleEmptyState();
+
+    const itemsContainer = document.getElementById('items');
+    itemsContainer.addEventListener('change', function(event) {
+      if (event.target.matches('input[type="checkbox"][name$="-DELETE"]')) {
+        const row = event.target.closest('.item-row');
+        if (row) {
+          row.classList.toggle('item-row-deleted', event.target.checked);
+        }
+        toggleEmptyState();
+      }
     });
   });
 </script>
@@ -209,11 +309,16 @@
   .item-row {
     transition: all 0.3s ease;
   }
-  
+
   .item-row:hover {
     border-color: var(--primary-color) !important;
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+  }
+
+  .item-row.item-row-deleted {
+    opacity: 0.6;
+    border-style: dashed;
   }
   
   .form-control.is-valid {

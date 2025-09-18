@@ -76,7 +76,7 @@ def invoice_create(request, client_pk: int):
     client = get_object_or_404(Client, pk=client_pk)
     if request.method == 'POST':
         form = InvoiceForm(request.POST)
-        formset = ItemFormSet(request.POST)
+        formset = ItemFormSet(request.POST, prefix='items')
         if form.is_valid() and formset.is_valid():
             invoice = form.save()
             formset.instance = invoice
@@ -84,7 +84,7 @@ def invoice_create(request, client_pk: int):
             return redirect('invoice_detail', pk=invoice.pk)
     else:
         form = InvoiceForm(initial={'client': client, 'invoice_type': Invoice.Type.GENERAL})
-        formset = ItemFormSet()
+        formset = ItemFormSet(prefix='items')
     return render(request, 'invoices/form.html', {'form': form, 'formset': formset, 'client': client, 'title': 'New Invoice'})
 
 
@@ -99,14 +99,14 @@ def invoice_update(request, pk: int):
     invoice = get_object_or_404(Invoice, pk=pk)
     if request.method == 'POST':
         form = InvoiceForm(request.POST, instance=invoice)
-        formset = ItemFormSet(request.POST, instance=invoice)
+        formset = ItemFormSet(request.POST, instance=invoice, prefix='items')
         if form.is_valid() and formset.is_valid():
             form.save()
             formset.save()
             return redirect('invoice_detail', pk=invoice.pk)
     else:
         form = InvoiceForm(instance=invoice)
-        formset = ItemFormSet(instance=invoice)
+        formset = ItemFormSet(instance=invoice, prefix='items')
     return render(request, 'invoices/form.html', {'form': form, 'formset': formset, 'client': invoice.client, 'title': 'Edit Invoice'})
 
 
