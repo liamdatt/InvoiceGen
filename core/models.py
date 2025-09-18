@@ -103,7 +103,7 @@ class Invoice(models.Model):
         logo_path = next((p for p in logo_candidates if p.exists()), None)
 
         html = render_to_string(
-            "invoices/detail.html",
+            "invoices/detail_pdf.html",
             {
                 "invoice": self,
                 "for_pdf": True,
