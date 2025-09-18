@@ -15,6 +15,8 @@ class InvoiceAdmin(admin.ModelAdmin):
     inlines = [InvoiceItemInline]
 
     def total_display(self, obj):
+        if obj.invoice_type == Invoice.Type.PROFORMA:
+            return obj.proforma_total_formatted or "—"
         return f"${obj.total:,.2f}"
     total_display.short_description = 'Total'
 

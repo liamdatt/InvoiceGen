@@ -35,24 +35,21 @@
         </div>
         <div class="card-body p-4">
           <div class="row g-4">
-            {% for field in form %}
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">
-                  {{ field.label }}
-                  {% if field.field.required %}
-                    <span class="text-danger">*</span>
-                  {% endif %}
-                </label>
-                {{ field }}
-                {% if field.help_text %}
-                  <div class="form-text">{{ field.help_text }}</div>
-                {% endif %}
-                {% if field.errors %}
-                  <div class="text-danger small mt-1">
-                    <i class="bi bi-exclamation-circle me-1"></i>{{ field.errors.0 }}
-                  </div>
-                {% endif %}
-              </div>
+            {% include 'components/form_field.html' with field=form.client %}
+            {% include 'components/form_field.html' with field=form.invoice_type %}
+            {% include 'components/form_field.html' with field=form.date %}
+            {% include 'components/form_field.html' with field=form.chassis_no %}
+          </div>
+
+          <div class="row g-4 mt-1" data-invoice-type-visible="GENERAL">
+            {% for field_name in general_fields %}
+              {% include 'components/form_field.html' with field=form[field_name] %}
+            {% endfor %}
+          </div>
+
+          <div class="row g-4 mt-1" data-invoice-type-visible="PROFORMA">
+            {% for field_name in proforma_fields %}
+              {% include 'components/form_field.html' with field=form[field_name] %}
             {% endfor %}
           </div>
         </div>
@@ -61,7 +58,7 @@
   </div>
 
   <!-- Invoice Items -->
-  <div class="row g-4 mb-4">
+  <div class="row g-4 mb-4" data-invoice-type-visible="GENERAL">
     <div class="col-12">
       <div class="card" style="border-radius: 16px;">
         <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border-radius: 16px 16px 0 0 !important;">
@@ -204,9 +201,15 @@
 
 <script>
   function applyBootstrapStyles(root = document) {
-    root.querySelectorAll('input:not([type="checkbox"]), select, textarea').forEach(function(el) {
+    root.querySelectorAll('input:not([type="checkbox"]), textarea').forEach(function(el) {
       if (!el.classList.contains('form-control')) {
         el.classList.add('form-control');
+      }
+    });
+
+    root.querySelectorAll('select').forEach(function(el) {
+      if (!el.classList.contains('form-select')) {
+        el.classList.add('form-select');
       }
     });
 
@@ -234,6 +237,36 @@
       });
 
       input.dataset.validationBound = '1';
+    });
+  }
+
+  function updateInvoiceTypeUI() {
+    const invoiceTypeField = document.querySelector('[name="invoice_type"]');
+    const type = (invoiceTypeField ? invoiceTypeField.value : 'GENERAL').toUpperCase();
+
+    document.querySelectorAll('[data-invoice-type-visible]').forEach(function(section) {
+      const visibleFor = section.dataset.invoiceTypeVisible
+        .split(',')
+        .map(function(value) { return value.trim().toUpperCase(); });
+
+      if (visibleFor.includes(type)) {
+        section.classList.remove('d-none');
+      } else {
+        section.classList.add('d-none');
+      }
+    });
+
+    document.querySelectorAll('[data-proforma-field="1"]').forEach(function(input) {
+      const isRequired = input.dataset.proformaRequired === '1';
+      if (type === 'PROFORMA') {
+        if (isRequired) {
+          input.required = true;
+        }
+      } else {
+        input.required = false;
+        input.classList.remove('is-invalid');
+        input.classList.remove('is-valid');
+      }
     });
   }
 
@@ -285,6 +318,7 @@
     applyBootstrapStyles();
     attachValidationHandlers();
     toggleEmptyState();
+    updateInvoiceTypeUI();
 
     const itemsContainer = document.getElementById('items');
     itemsContainer.addEventListener('change', function(event) {
@@ -296,6 +330,11 @@
         toggleEmptyState();
       }
     });
+
+    const invoiceTypeField = document.querySelector('[name="invoice_type"]');
+    if (invoiceTypeField) {
+      invoiceTypeField.addEventListener('change', updateInvoiceTypeUI);
+    }
   });
 </script>
 

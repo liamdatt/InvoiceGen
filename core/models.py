@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.db import models
 from django.conf import settings
 from django.core.files.base import ContentFile
@@ -30,6 +32,14 @@ class Invoice(models.Model):
     chassis_no = models.CharField("Chassis#", max_length=100, blank=True)
     date = models.DateField()
 
+    proforma_make = models.CharField("Make", max_length=100, blank=True)
+    proforma_model = models.CharField("Model", max_length=100, blank=True)
+    proforma_year = models.PositiveIntegerField("Year", blank=True, null=True)
+    proforma_colour = models.CharField("Colour", max_length=50, blank=True)
+    proforma_cc_rating = models.CharField("CC Rating", max_length=50, blank=True)
+    proforma_price = models.DecimalField("Total Cost", max_digits=15, decimal_places=2, blank=True, null=True)
+    proforma_currency = models.CharField("Currency", max_length=10, blank=True, default="JMD")
+
     pdf_file = models.FileField(upload_to='invoices/', blank=True, null=True)
 
     class Meta:
@@ -56,10 +66,20 @@ class Invoice(models.Model):
     def total(self) -> Decimal:
         return (self.parts_subtotal + self.labour_subtotal + self.gct).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
-    def _money(self, v: Decimal) -> str:
-        return f"${v:,.2f}"
+    def _money(self, v: Decimal | None, currency: str | None = None) -> str:
+        if v is None:
+            return ""
+        amount = v.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        currency = (currency or '').strip()
+        if currency:
+            return f"{currency} {amount:,.2f}"
+        return f"${amount:,.2f}"
 
-    def generate_general_pdf(self, overwrite: bool = True) -> None:
+    @property
+    def proforma_total_formatted(self) -> str:
+        return self._money(self.proforma_price, self.proforma_currency)
+
+    def _generate_pdf(self, template_name: str, filename: str, overwrite: bool = True) -> None:
         try:
             from playwright.sync_api import Error as PlaywrightError, sync_playwright
         except ImportError as exc:
@@ -75,7 +95,7 @@ class Invoice(models.Model):
         logo_path = next((p for p in logo_candidates if p.exists()), None)
 
         html = render_to_string(
-            "invoices/detail_pdf.html",
+            template_name,
             {
                 "invoice": self,
                 "for_pdf": True,
@@ -103,9 +123,16 @@ class Invoice(models.Model):
                 "Playwright could not render the invoice PDF. Ensure Chromium is installed via 'playwright install chromium'."
             ) from exc
 
-        filename = f"invoice-{self.pk}-general.pdf"
         if not self.pdf_file or overwrite:
             self.pdf_file.save(filename, ContentFile(pdf_content), save=True)
+
+    def generate_general_pdf(self, overwrite: bool = True) -> None:
+        filename = f"invoice-{self.pk}-general.pdf"
+        self._generate_pdf("invoices/detail_pdf.html", filename, overwrite=overwrite)
+
+    def generate_proforma_pdf(self, overwrite: bool = True) -> None:
+        filename = f"invoice-{self.pk}-proforma.pdf"
+        self._generate_pdf("invoices/detail_pdf_proforma.html", filename, overwrite=overwrite)
 
 
 class InvoiceItem(models.Model):
