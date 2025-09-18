@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load humanize %}
 {% block content %}
 <div class="invoice-screen py-5">
   <div class="invoice-paper">
@@ -45,8 +46,8 @@
           {% for it in invoice.items.all %}
             <tr>
               <td class="description">{{ it.description }}</td>
-              <td class="labour">${{ it.labour_cost|floatformat:2 }}</td>
-              <td class="parts">${{ it.parts_cost|floatformat:2 }}</td>
+              <td class="labour">${{ it.labour_cost|floatformat:2|intcomma }}</td>
+              <td class="parts">${{ it.parts_cost|floatformat:2|intcomma }}</td>
             </tr>
           {% endfor %}
         {% else %}
@@ -60,18 +61,18 @@
     <div class="totals">
       <div class="totals-row">
         <span>Cost</span>
-        <span class="amount">${{ invoice.labour_subtotal|floatformat:2 }}</span>
-        <span class="amount">${{ invoice.parts_subtotal|floatformat:2 }}</span>
+        <span class="amount">${{ invoice.labour_subtotal|floatformat:2|intcomma }}</span>
+        <span class="amount">${{ invoice.parts_subtotal|floatformat:2|intcomma }}</span>
       </div>
       <div class="totals-row">
         <span>Plus 15% GCT</span>
         <span></span>
-        <span class="amount">${{ invoice.gct|floatformat:2 }}</span>
+        <span class="amount">${{ invoice.gct|floatformat:2|intcomma }}</span>
       </div>
       <div class="totals-row grand-total">
         <span>Total Cost</span>
         <span></span>
-        <span class="amount">${{ invoice.total|floatformat:2 }}</span>
+        <span class="amount">${{ invoice.total|floatformat:2|intcomma }}</span>
       </div>
     </div>
 
