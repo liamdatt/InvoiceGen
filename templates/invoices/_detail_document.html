@@ -325,4 +325,29 @@
       width: 100%;
     }
   }
+
+  {% if for_pdf %}
+  .invoice-screen {
+    display: block;
+    padding: 0;
+    width: 100%;
+  }
+
+  .invoice-paper {
+    max-width: none;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 18mm 16mm 14mm;
+  }
+
+  .invoice-header {
+    align-items: stretch;
+  }
+
+  .brand-block {
+    align-items: flex-start;
+  }
+  {% endif %}
 </style>
