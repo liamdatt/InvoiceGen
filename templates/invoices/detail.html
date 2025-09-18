@@ -1,188 +1,313 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block content %}
-<!-- Header Section -->
-<div class="row mb-4">
-  <div class="col-12">
-    <div class="card" style="background: var(--primary-gradient); color: white; border-radius: 25px; border: 1px solid rgba(255,255,255,0.2);">
-      <div class="card-body p-4">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <h1 class="h3 fw-bold mb-2" style="color: white;">Invoice #{{ invoice.pk }}</h1>
-            <p class="mb-0" style="color: rgba(255,255,255,0.9);">
-              <i class="bi bi-building me-2"></i>{{ invoice.client.name }}
-            </p>
-          </div>
-          <div class="text-end">
-            <div class="mb-3">
-              <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-semibold">
-                {{ invoice.get_invoice_type_display }}
-              </span>
-            </div>
-            <div class="btn-group">
-              <a class="btn btn-light" href="{% url 'invoice_update' invoice.pk %}" style="border-radius: 10px 0 0 10px;">
-                <i class="bi bi-pencil me-2"></i>Edit
-              </a>
-              <a class="btn btn-warning" href="{% url 'invoice_pdf' invoice.pk %}" style="border-radius: 0 10px 10px 0;">
-                <i class="bi bi-download me-2"></i>Download PDF
-              </a>
-            </div>
-          </div>
+<div class="invoice-screen py-5">
+  <div class="invoice-paper">
+    <div class="invoice-header">
+      <div class="brand-block">
+        <img src="{% static 'logo.jpeg' %}" alt="Stepmath Auto Limited" class="brand-logo">
+        <div class="brand-text">
+          <div class="brand-name">STEPMATH AUTO LIMITED</div>
+          <div class="brand-meta">(Certified Car Dealer)</div>
+          <div>94b Old Hope Road</div>
+          <div>Kingston 6</div>
+          <div>Tel: (876) 927-8281 / 978-0297</div>
+          <div>Email: stepmathauto100@gmail.com</div>
         </div>
+      </div>
+      <div class="estimate-title">ESTIMATE FOR REPAIRS</div>
+    </div>
+
+    <div class="invoice-meta">
+      <div class="meta-col">
+        <div><span class="meta-label">Client:</span> {{ invoice.client.name }}</div>
+        <div><span class="meta-label">Vehicle:</span> {{ invoice.vehicle|default:"" }}</div>
+        <div><span class="meta-label">Lic#:</span> {{ invoice.lic_no|default:"" }}</div>
+        <div><span class="meta-label">Chassis#:</span> {{ invoice.chassis_no|default:"" }}</div>
+      </div>
+      <div class="meta-col align-end">
+        <div><span class="meta-label">Date:</span> {{ invoice.date|date:"j-M-y" }}</div>
       </div>
     </div>
-  </div>
-</div>
 
-<div class="row g-4">
-  <!-- Invoice Details -->
-  <div class="col-lg-4">
-    <div class="card h-100" style="border-radius: 16px;">
-      <div class="card-header" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border-radius: 16px 16px 0 0 !important;">
-        <h5 class="mb-0 fw-bold">
-          <i class="bi bi-info-circle me-2" style="color: #667eea;"></i>Invoice Details
-        </h5>
-      </div>
-      <div class="card-body p-4">
-        <div class="mb-3">
-          <div class="small text-muted mb-1">Date</div>
-          <div class="fw-semibold">
-            <i class="bi bi-calendar3 me-2 text-primary"></i>{{ invoice.date }}
-          </div>
-        </div>
-        <div class="mb-3">
-          <div class="small text-muted mb-1">Vehicle</div>
-          <div class="fw-semibold">
-            <i class="bi bi-car-front me-2 text-primary"></i>{{ invoice.vehicle|default:"—" }}
-          </div>
-        </div>
-        <div class="mb-3">
-          <div class="small text-muted mb-1">License Number</div>
-          <div class="fw-semibold">
-            <i class="bi bi-hash me-2 text-primary"></i>{{ invoice.lic_no|default:"—" }}
-          </div>
-        </div>
-        <div class="mb-0">
-          <div class="small text-muted mb-1">Chassis Number</div>
-          <div class="fw-semibold">
-            <i class="bi bi-upc me-2 text-primary"></i>{{ invoice.chassis_no|default:"—" }}
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+    <div class="divider"></div>
 
-  <!-- Items and Totals -->
-  <div class="col-lg-8">
-    <div class="card" style="border-radius: 16px;">
-      <div class="card-header" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border-radius: 16px 16px 0 0 !important;">
-        <h5 class="mb-0 fw-bold">
-          <i class="bi bi-list-ul me-2" style="color: #667eea;"></i>Invoice Items
-        </h5>
-      </div>
-      <div class="card-body p-0">
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th class="description">Description</th>
+          <th class="labour">Labour Cost</th>
+          <th class="parts">Parts Cost</th>
+        </tr>
+      </thead>
+      <tbody>
         {% if invoice.items.all %}
-          <div class="table-responsive">
-            <table class="table table-hover mb-0">
-              <thead style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);">
-                <tr>
-                  <th class="border-0 fw-bold" style="padding: 1.2rem;">Description</th>
-                  <th class="border-0 fw-bold text-end" style="padding: 1.2rem;">Labour</th>
-                  <th class="border-0 fw-bold text-end" style="padding: 1.2rem;">Parts</th>
-                  <th class="border-0 fw-bold text-end" style="padding: 1.2rem;">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for it in invoice.items.all %}
-                  <tr style="transition: all 0.3s ease;">
-                    <td style="padding: 1.2rem; border-bottom: 1px solid #f3f4f6;">
-                      <div class="fw-semibold">{{ it.description }}</div>
-                    </td>
-                    <td class="text-end" style="padding: 1.2rem; border-bottom: 1px solid #f3f4f6;">
-                      <span class="fw-semibold text-success">${{ it.labour_cost }}</span>
-                    </td>
-                    <td class="text-end" style="padding: 1.2rem; border-bottom: 1px solid #f3f4f6;">
-                      <span class="fw-semibold text-info">${{ it.parts_cost }}</span>
-                    </td>
-                    <td class="text-end" style="padding: 1.2rem; border-bottom: 1px solid #f3f4f6;">
-                      <span class="fw-bold text-primary">${{ it.labour_cost|add:it.parts_cost }}</span>
-                    </td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          
-          <!-- Totals Section -->
-          <div style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 2rem; border-radius: 0 0 16px 16px;">
-            <div class="row">
-              <div class="col-md-6 offset-md-6">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <span class="fw-semibold">Labour Subtotal:</span>
-                  <span class="fw-bold text-success">${{ invoice.labour_subtotal }}</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <span class="fw-semibold">Parts Subtotal:</span>
-                  <span class="fw-bold text-info">${{ invoice.parts_subtotal }}</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <span class="fw-semibold">Subtotal:</span>
-                  <span class="fw-bold">${{ invoice.labour_subtotal|add:invoice.parts_subtotal }}</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                  <span class="fw-semibold">Plus 15% GCT:</span>
-                  <span class="fw-bold text-warning">${{ invoice.gct }}</span>
-                </div>
-                <hr style="margin: 1rem 0;">
-                <div class="d-flex justify-content-between align-items-center">
-                  <span class="h5 fw-bold mb-0">Total Amount:</span>
-                  <span class="h4 fw-bold mb-0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-                    ${{ invoice.total }}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+          {% for it in invoice.items.all %}
+            <tr>
+              <td class="description">{{ it.description }}</td>
+              <td class="labour">${{ it.labour_cost|floatformat:2 }}</td>
+              <td class="parts">${{ it.parts_cost|floatformat:2 }}</td>
+            </tr>
+          {% endfor %}
         {% else %}
-          <div class="text-center py-5">
-            <i class="bi bi-inbox" style="font-size: 4rem; color: #e5e7eb; margin-bottom: 1rem;"></i>
-            <h6 class="text-muted">No items added yet</h6>
-            <p class="text-muted small">Add items to this invoice to calculate totals</p>
-            <a class="btn btn-primary" href="{% url 'invoice_update' invoice.pk %}" style="border-radius: 10px;">
-              <i class="bi bi-plus me-2"></i>Add Items
-            </a>
-          </div>
+          <tr>
+            <td class="description" colspan="3">No invoice items have been added yet.</td>
+          </tr>
         {% endif %}
+      </tbody>
+    </table>
+
+    <div class="totals">
+      <div class="totals-row">
+        <span>Cost</span>
+        <span class="amount">${{ invoice.labour_subtotal|floatformat:2 }}</span>
+        <span class="amount">${{ invoice.parts_subtotal|floatformat:2 }}</span>
+      </div>
+      <div class="totals-row">
+        <span>Plus 15% GCT</span>
+        <span></span>
+        <span class="amount">${{ invoice.gct|floatformat:2 }}</span>
+      </div>
+      <div class="totals-row grand-total">
+        <span>Total Cost</span>
+        <span></span>
+        <span class="amount">${{ invoice.total|floatformat:2 }}</span>
       </div>
     </div>
+
+    <div class="signature-block">
+      <div class="signature-line"></div>
+      <div class="signature-name">ERROL DUHANEY</div>
+      <div class="signature-title">MANAGING DIRECTOR</div>
+    </div>
+  </div>
+
+  <div class="actions mt-4">
+    <a href="{% url 'invoice_update' invoice.pk %}" class="btn btn-outline-secondary btn-sm">Edit Invoice</a>
+    <a href="{% url 'invoice_pdf' invoice.pk %}" class="btn btn-primary btn-sm">Download PDF</a>
+    <a href="{% url 'clients_detail' invoice.client.pk %}" class="btn btn-outline-secondary btn-sm">View Client</a>
+    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm">Back to Dashboard</a>
   </div>
 </div>
 
-<!-- Action Buttons -->
-<div class="row mt-4">
-  <div class="col-12">
-    <div class="card" style="border-radius: 16px; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);">
-      <div class="card-body p-4">
-        <h6 class="fw-bold mb-3">
-          <i class="bi bi-lightning me-2" style="color: #667eea;"></i>Quick Actions
-        </h6>
-        <div class="d-flex gap-3 flex-wrap">
-          <a href="{% url 'invoice_update' invoice.pk %}" class="btn btn-outline-primary" style="border-radius: 10px;">
-            <i class="bi bi-pencil me-2"></i>Edit Invoice
-          </a>
-          <a href="{% url 'invoice_pdf' invoice.pk %}" class="btn btn-primary" style="border-radius: 10px;">
-            <i class="bi bi-download me-2"></i>Download PDF
-          </a>
-          <a href="{% url 'clients_detail' invoice.client.pk %}" class="btn btn-outline-secondary" style="border-radius: 10px;">
-            <i class="bi bi-building me-2"></i>View Client
-          </a>
-          <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary" style="border-radius: 10px;">
-            <i class="bi bi-house me-2"></i>Back to Dashboard
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+<style>
+  .invoice-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .invoice-paper {
+    background: #ffffff;
+    color: #111111;
+    width: min(950px, 100%);
+    padding: 3.5rem 3rem 2.75rem;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+    font-family: 'Times New Roman', serif;
+  }
+
+  .invoice-header {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+    text-transform: uppercase;
+    align-items: center;
+  }
+
+  .brand-block {
+    display: flex;
+    width: 100%;
+    gap: 1.5rem;
+    align-items: center;
+  }
+
+  .brand-logo {
+    width: 150px;
+    height: auto;
+    object-fit: contain;
+  }
+
+  .brand-text {
+    font-size: 0.95rem;
+    line-height: 1.4rem;
+  }
+
+  .brand-name {
+    font-weight: 700;
+    font-size: 1.4rem;
+    letter-spacing: 0.12rem;
+  }
+
+  .brand-meta {
+    font-size: 1rem;
+    font-style: italic;
+    margin-bottom: 0.25rem;
+  }
+
+  .estimate-title {
+    font-weight: 700;
+    letter-spacing: 0.45rem;
+    font-size: 1.5rem;
+    text-align: center;
+  }
+
+  .invoice-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1.5rem;
+    font-size: 1rem;
+    gap: 2rem;
+  }
+
+  .meta-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .meta-label {
+    display: inline-block;
+    min-width: 5.5rem;
+    font-weight: 700;
+  }
+
+  .align-end {
+    align-items: flex-end;
+  }
+
+  .divider {
+    height: 2px;
+    width: 100%;
+    background: #111111;
+    margin: 1.5rem 0 1.75rem;
+  }
+
+  .items-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 1rem;
+  }
+
+  .items-table th,
+  .items-table td {
+    padding: 0.85rem 0.75rem;
+    border-bottom: 1px solid rgba(17, 17, 17, 0.2);
+  }
+
+  .items-table th {
+    text-transform: uppercase;
+    font-weight: 700;
+    text-align: left;
+    background: rgba(17, 17, 17, 0.05);
+    letter-spacing: 0.05rem;
+  }
+
+  .items-table td.description {
+    width: 60%;
+  }
+
+  .items-table td.labour,
+  .items-table td.parts,
+  .items-table th.labour,
+  .items-table th.parts {
+    width: 20%;
+    text-align: right;
+  }
+
+  .items-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .totals {
+    margin-top: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-end;
+    font-size: 1.05rem;
+  }
+
+  .totals-row {
+    display: grid;
+    grid-template-columns: 1.2fr 0.6fr 0.6fr;
+    gap: 1.5rem;
+    width: min(420px, 100%);
+    text-transform: uppercase;
+  }
+
+  .totals-row span:first-child {
+    font-weight: 700;
+  }
+
+  .totals-row .amount {
+    text-align: right;
+    font-weight: 600;
+  }
+
+  .grand-total .amount {
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+
+  .signature-block {
+    margin-top: 3.5rem;
+    text-align: left;
+  }
+
+  .signature-line {
+    width: 260px;
+    height: 1px;
+    background: #111111;
+    margin-bottom: 0.5rem;
+  }
+
+  .signature-name {
+    font-weight: 700;
+  }
+
+  .signature-title {
+    letter-spacing: 0.2rem;
+    font-size: 0.9rem;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+  }
+
+  @media (max-width: 768px) {
+    .invoice-paper {
+      padding: 2.5rem 1.5rem;
+    }
+
+    .brand-block {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .invoice-meta {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .align-end {
+      align-items: flex-start;
+    }
+
+    .estimate-title {
+      font-size: 1.25rem;
+      letter-spacing: 0.3rem;
+    }
+
+    .totals-row {
+      grid-template-columns: 1fr 0.6fr 0.6fr;
+      width: 100%;
+    }
+  }
+</style>
 {% endblock %}
-
-
