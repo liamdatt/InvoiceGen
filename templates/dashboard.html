@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+{% block content %}
+<!-- Welcome Section -->
+<div class="row mb-5">
+  <div class="col-12">
+    <div class="card" style="background: var(--primary-gradient); color: white; border-radius: 25px; border: 1px solid rgba(255,255,255,0.2);">
+      <div class="card-body p-5">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <h1 class="display-6 fw-bold mb-3" style="color: white;">Welcome back, {{ user.username }}!</h1>
+            <p class="lead mb-4" style="color: rgba(255,255,255,0.9);">
+              Manage your clients and invoices with ease. Create professional invoices and track your business growth.
+            </p>
+            <div class="d-flex gap-3">
+              <a class="btn btn-light btn-lg" href="{% url 'clients_create' %}" style="border-radius: 12px; font-weight: 600;">
+                <i class="bi bi-person-plus me-2"></i>Add New Client
+              </a>
+              <a class="btn btn-outline-light btn-lg" href="{% url 'clients_list' %}" style="border-radius: 12px; font-weight: 600;">
+                <i class="bi bi-people me-2"></i>View All Clients
+              </a>
+            </div>
+          </div>
+          <div class="col-md-4 text-center">
+            <i class="bi bi-graph-up" style="font-size: 6rem; opacity: 0.3;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-4 mb-5">
+  <div class="col-md-4">
+    <div class="card text-center" style="border-radius: 20px; background: var(--primary-gradient); color: white; border: 1px solid rgba(255,255,255,0.2);">
+      <div class="card-body p-4">
+        <i class="bi bi-people" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+        <h3 class="fw-bold">{{ clients|length }}</h3>
+        <p class="mb-0" style="opacity: 0.9;">Total Clients</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card text-center" style="border-radius: 20px; background: var(--secondary-gradient); color: white; border: 1px solid rgba(255,255,255,0.2);">
+      <div class="card-body p-4">
+        <i class="bi bi-file-earmark-text" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+        <h3 class="fw-bold">{{ invoices|length }}</h3>
+        <p class="mb-0" style="opacity: 0.9;">Total Invoices</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card text-center" style="border-radius: 20px; background: var(--accent-gradient); color: white; border: 1px solid rgba(255,255,255,0.2);">
+      <div class="card-body p-4">
+        <i class="bi bi-currency-dollar" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+        <h3 class="fw-bold">$0</h3>
+        <p class="mb-0" style="opacity: 0.9;">Total Revenue</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Content Grid -->
+<div class="row g-4">
+  <!-- Clients Section -->
+  <div class="col-lg-6">
+    <div class="card h-100" style="border-radius: 20px;">
+      <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border-radius: 20px 20px 0 0 !important;">
+        <div>
+          <h5 class="mb-0 fw-bold">
+            <i class="bi bi-people me-2" style="color: #667eea;"></i>Recent Clients
+          </h5>
+          <small class="text-muted">Manage your client relationships</small>
+        </div>
+        <a class="btn btn-primary btn-sm" href="{% url 'clients_list' %}" style="border-radius: 10px;">
+          <i class="bi bi-eye me-1"></i>View All
+        </a>
+      </div>
+      <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+          {% for c in clients|slice:":5" %}
+            <div class="list-group-item d-flex justify-content-between align-items-center" style="padding: 1.2rem 1.5rem;">
+              <div>
+                <div class="d-flex align-items-center">
+                  <div class="avatar me-3" style="width: 40px; height: 40px; background: var(--primary-gradient); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                    {{ c.name|first|upper }}
+                  </div>
+                  <div>
+                    <a href="{% url 'clients_detail' c.pk %}" class="fw-semibold text-decoration-none">{{ c.name }}</a>
+                    <div class="small text-muted">{{ c.email|default:"No email" }}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="d-flex gap-2">
+                <a class="btn btn-outline-primary btn-sm" href="{% url 'clients_update' c.pk %}" style="border-radius: 8px;">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <a class="btn btn-primary btn-sm" href="{% url 'invoice_create' c.pk %}" style="border-radius: 8px;">
+                  <i class="bi bi-plus"></i>
+                </a>
+              </div>
+            </div>
+          {% empty %}
+            <div class="text-center py-5">
+              <i class="bi bi-person-plus" style="font-size: 3rem; color: #e5e7eb; margin-bottom: 1rem;"></i>
+              <h6 class="text-muted">No clients yet</h6>
+              <p class="text-muted small">Start by adding your first client</p>
+              <a class="btn btn-primary" href="{% url 'clients_create' %}" style="border-radius: 10px;">
+                <i class="bi bi-person-plus me-2"></i>Add Client
+              </a>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Invoices Section -->
+  <div class="col-lg-6">
+    <div class="card h-100" style="border-radius: 20px;">
+      <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border-radius: 20px 20px 0 0 !important;">
+        <div>
+          <h5 class="mb-0 fw-bold">
+            <i class="bi bi-file-earmark-text me-2" style="color: #667eea;"></i>Recent Invoices
+          </h5>
+          <small class="text-muted">Track your latest billing activity</small>
+        </div>
+        {% if clients %}
+        <div class="dropdown">
+          <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" style="border-radius: 10px;">
+            <i class="bi bi-plus me-1"></i>New Invoice
+          </button>
+          <ul class="dropdown-menu">
+        {% for c in clients %}
+              <li><a class="dropdown-item" href="{% url 'invoice_create' c.pk %}">{{ c.name }}</a></li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+      </div>
+      <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+          {% for inv in invoices|slice:":5" %}
+            <div class="list-group-item" style="padding: 1.2rem 1.5rem;">
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="flex-grow-1">
+                  <div class="d-flex align-items-center mb-2">
+                    <div class="invoice-icon me-3" style="width: 40px; height: 40px; background: var(--secondary-gradient); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white;">
+                      <i class="bi bi-file-earmark-text"></i>
+                    </div>
+                    <div>
+                      <a href="{% url 'invoice_detail' inv.pk %}" class="fw-semibold text-decoration-none">
+                        Invoice #{{ inv.pk }}
+                      </a>
+                      <div class="small text-muted">{{ inv.client.name }}</div>
+                    </div>
+                  </div>
+                  <div class="d-flex gap-3 small text-muted">
+                    <span><i class="bi bi-calendar3 me-1"></i>{{ inv.date }}</span>
+                    <span><i class="bi bi-tag me-1"></i>{{ inv.get_invoice_type_display }}</span>
+                  </div>
+                </div>
+                <div class="text-end">
+                  <a class="btn btn-outline-primary btn-sm" href="{% url 'invoice_pdf' inv.pk %}" style="border-radius: 8px;">
+                    <i class="bi bi-download me-1"></i>PDF
+                  </a>
+                </div>
+              </div>
+            </div>
+        {% empty %}
+            <div class="text-center py-5">
+              <i class="bi bi-file-earmark-plus" style="font-size: 3rem; color: #e5e7eb; margin-bottom: 1rem;"></i>
+              <h6 class="text-muted">No invoices yet</h6>
+              <p class="text-muted small">Create your first invoice to get started</p>
+              {% if clients %}
+                <div class="dropdown">
+                  <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" style="border-radius: 10px;">
+                    <i class="bi bi-plus me-2"></i>Create Invoice
+                  </button>
+                  <ul class="dropdown-menu">
+                    {% for c in clients %}
+                      <li><a class="dropdown-item" href="{% url 'invoice_create' c.pk %}">{{ c.name }}</a></li>
+        {% endfor %}
+      </ul>
+                </div>
+              {% else %}
+                <p class="text-muted small mt-2">Add a client first to create invoices</p>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+
+<!-- Quick Actions Section -->
+<div class="row mt-5">
+  <div class="col-12">
+    <div class="card" style="border-radius: 20px; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-3">
+          <i class="bi bi-lightning me-2" style="color: #667eea;"></i>Quick Actions
+        </h5>
+        <div class="row g-3">
+          <div class="col-md-3">
+            <a href="{% url 'clients_create' %}" class="btn btn-outline-primary w-100 py-3" style="border-radius: 12px; border-width: 2px;">
+              <i class="bi bi-person-plus d-block mb-2" style="font-size: 1.5rem;"></i>
+              <span class="fw-semibold">Add Client</span>
+            </a>
+          </div>
+          <div class="col-md-3">
+            <a href="{% url 'clients_list' %}" class="btn btn-outline-primary w-100 py-3" style="border-radius: 12px; border-width: 2px;">
+              <i class="bi bi-people d-block mb-2" style="font-size: 1.5rem;"></i>
+              <span class="fw-semibold">View Clients</span>
+            </a>
+          </div>
+          <div class="col-md-3">
+            {% if clients %}
+              <div class="dropdown w-100">
+                <button class="btn btn-outline-primary w-100 py-3 dropdown-toggle" type="button" data-bs-toggle="dropdown" style="border-radius: 12px; border-width: 2px;">
+                  <i class="bi bi-file-earmark-plus d-block mb-2" style="font-size: 1.5rem;"></i>
+                  <span class="fw-semibold">New Invoice</span>
+                </button>
+                <ul class="dropdown-menu w-100">
+                  {% for c in clients %}
+                    <li><a class="dropdown-item" href="{% url 'invoice_create' c.pk %}">{{ c.name }}</a></li>
+        {% endfor %}
+      </ul>
+              </div>
+            {% else %}
+              <button class="btn btn-outline-secondary w-100 py-3" disabled style="border-radius: 12px; border-width: 2px;">
+                <i class="bi bi-file-earmark-plus d-block mb-2" style="font-size: 1.5rem;"></i>
+                <span class="fw-semibold">New Invoice</span>
+                <div class="small">Add client first</div>
+              </button>
+            {% endif %}
+          </div>
+          <div class="col-md-3">
+            <a href="#" class="btn btn-outline-primary w-100 py-3" style="border-radius: 12px; border-width: 2px;">
+              <i class="bi bi-graph-up d-block mb-2" style="font-size: 1.5rem;"></i>
+              <span class="fw-semibold">Reports</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+

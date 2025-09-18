@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+{% block content %}
+<!-- Header Section -->
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 20px;">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h1 class="h3 fw-bold mb-2" style="color: white;">{{ title }}</h1>
+            <p class="mb-0" style="color: rgba(255,255,255,0.9);">
+              <i class="bi bi-building me-2"></i>{{ client.name }}
+            </p>
+          </div>
+          <div>
+            <i class="bi bi-file-earmark-plus" style="font-size: 3rem; opacity: 0.3;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  
+  <!-- Invoice Details -->
+  <div class="row g-4 mb-4">
+    <div class="col-12">
+      <div class="card" style="border-radius: 16px;">
+        <div class="card-header" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border-radius: 16px 16px 0 0 !important;">
+          <h5 class="mb-0 fw-bold">
+            <i class="bi bi-info-circle me-2" style="color: #667eea;"></i>Invoice Information
+          </h5>
+        </div>
+        <div class="card-body p-4">
+          <div class="row g-4">
+            {% for field in form %}
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">
+                  {{ field.label }}
+                  {% if field.field.required %}
+                    <span class="text-danger">*</span>
+                  {% endif %}
+                </label>
+                {{ field }}
+                {% if field.help_text %}
+                  <div class="form-text">{{ field.help_text }}</div>
+                {% endif %}
+                {% if field.errors %}
+                  <div class="text-danger small mt-1">
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ field.errors.0 }}
+                  </div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invoice Items -->
+  <div class="row g-4 mb-4">
+    <div class="col-12">
+      <div class="card" style="border-radius: 16px;">
+        <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border-radius: 16px 16px 0 0 !important;">
+          <div>
+            <h5 class="mb-0 fw-bold">
+              <i class="bi bi-list-ul me-2" style="color: #667eea;"></i>Invoice Items
+            </h5>
+            <small class="text-muted">Add services and parts for this invoice</small>
+          </div>
+          <button type="button" class="btn btn-outline-primary btn-sm" onclick="addItem()" style="border-radius: 8px;">
+            <i class="bi bi-plus me-1"></i>Add Item
+          </button>
+        </div>
+        <div class="card-body p-4">
+          {{ formset.management_form }}
+          <div id="items">
+            {% for f in formset %}
+              <div class="item-row p-3 mb-3" style="background: #f8fafc; border-radius: 12px; border: 2px solid #e5e7eb;">
+                <div class="row g-3 align-items-end">
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold">
+                      <i class="bi bi-text-left me-1"></i>Description
+                    </label>
+                    {{ f.description }}
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label fw-semibold">
+                      <i class="bi bi-tools me-1"></i>Labour Cost
+                    </label>
+                    <div class="input-group">
+                      <span class="input-group-text">$</span>
+                      {{ f.labour_cost }}
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label fw-semibold">
+                      <i class="bi bi-gear me-1"></i>Parts Cost
+                    </label>
+                    <div class="input-group">
+                      <span class="input-group-text">$</span>
+                      {{ f.parts_cost }}
+                    </div>
+                  </div>
+                  {% if f.DELETE %}
+                    <div class="col-12">
+                      <div class="form-check mt-2">
+                        {{ f.DELETE }}
+                        <label class="form-check-label text-danger fw-semibold">
+                          <i class="bi bi-trash me-1"></i>Delete this item
+                        </label>
+                      </div>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+          
+          {% if not formset %}
+            <div class="text-center py-4" id="no-items-message">
+              <i class="bi bi-inbox" style="font-size: 3rem; color: #e5e7eb; margin-bottom: 1rem;"></i>
+              <h6 class="text-muted">No items added yet</h6>
+              <p class="text-muted small">Click "Add Item" to start building your invoice</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Actions -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card" style="border-radius: 16px; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="fw-bold mb-1">Ready to save?</h6>
+              <small class="text-muted">Review your invoice details before saving</small>
+            </div>
+            <div class="d-flex gap-3">
+              <a class="btn btn-outline-secondary" href="{% url 'clients_detail' client.pk %}" style="border-radius: 10px;">
+                <i class="bi bi-x-circle me-2"></i>Cancel
+              </a>
+              <button type="submit" class="btn btn-primary" style="border-radius: 10px;">
+                <i class="bi bi-check-circle me-2"></i>Save Invoice
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+<script>
+  // Auto-apply Bootstrap classes
+  (function(){
+    document.querySelectorAll('input:not([type="checkbox"]), select, textarea').forEach(function(el){
+      if(!el.classList.contains('form-control')) {
+        el.classList.add('form-control');
+      }
+    });
+    
+    // Style checkboxes
+    document.querySelectorAll('input[type="checkbox"]').forEach(function(el){
+      el.classList.add('form-check-input');
+    });
+  })();
+
+  // Add item functionality (placeholder - you might need to implement proper Django formset handling)
+  function addItem() {
+    // This would need proper Django formset JavaScript implementation
+    console.log('Add item functionality would be implemented here');
+    // For now, just show a message
+    alert('To add more items, you can modify the formset in the Django view or use JavaScript formset libraries.');
+  }
+
+  // Form validation feedback
+  document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const inputs = form.querySelectorAll('input, select, textarea');
+    
+    inputs.forEach(input => {
+      input.addEventListener('input', function() {
+        if (this.checkValidity()) {
+          this.classList.remove('is-invalid');
+          this.classList.add('is-valid');
+        } else {
+          this.classList.remove('is-valid');
+          this.classList.add('is-invalid');
+        }
+      });
+    });
+  });
+</script>
+
+<style>
+  .input-group-text {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 2px solid #e5e7eb;
+    font-weight: 600;
+  }
+  
+  .item-row {
+    transition: all 0.3s ease;
+  }
+  
+  .item-row:hover {
+    border-color: var(--primary-color) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+  }
+  
+  .form-control.is-valid {
+    border-color: #28a745;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2328a745' d='m2.3 6.73.8-.8 2.8-2.8-.8-.8L2.3 5.15l-.8-.8-.8.8z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+  }
+  
+  .form-control.is-invalid {
+    border-color: #dc3545;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath d='M5.8 5.8L10.2 10.2M10.2 5.8L5.8 10.2'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+  }
+</style>
+{% endblock %}
+
+
