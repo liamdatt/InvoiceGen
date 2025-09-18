@@ -1,0 +1,37 @@
+{% load static %}
+{% load humanize %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Invoice {{ invoice.pk }}</title>
+    <style>
+      @page {
+        size: A4;
+        margin: 20mm;
+      }
+
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #ffffff;
+      }
+
+      body {
+        font-family: 'Times New Roman', serif;
+      }
+
+      .invoice-screen {
+        padding: 0;
+      }
+
+      .invoice-paper {
+        box-shadow: none;
+        border: none;
+      }
+    </style>
+  </head>
+  <body>
+    {% include 'invoices/_detail_document.html' with for_pdf=True %}
+  </body>
+</html>
