@@ -452,9 +452,12 @@
             <span style="color: white; font-weight: 500;">{{ user.username }}</span>
           </div>
           <div class="nav-item">
-            <a class="btn btn-outline-light btn-sm" href="{% url 'logout' %}" style="border: 2px solid rgba(255,255,255,0.3); backdrop-filter: blur(10px);">
-              <i class="bi bi-box-arrow-right me-1"></i>Logout
-            </a>
+            <form method="post" action="{% url 'logout' %}" style="display: inline;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-light btn-sm" style="border: 2px solid rgba(255,255,255,0.3); backdrop-filter: blur(10px);">
+                <i class="bi bi-box-arrow-right me-1"></i>Logout
+              </button>
+            </form>
           </div>
         </div>
         {% endif %}

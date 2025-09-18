@@ -95,8 +95,8 @@ def invoice_create(request, client_pk: int):
         'formset': formset,
         'client': client,
         'title': 'New Invoice',
-        'general_fields': GENERAL_FIELDS,
-        'proforma_fields': PROFORMA_FIELDS,
+        'general_fields': [form[field_name] for field_name in GENERAL_FIELDS],
+        'proforma_fields': [form[field_name] for field_name in PROFORMA_FIELDS],
     }
     return render(request, 'invoices/form.html', context)
 
@@ -125,8 +125,8 @@ def invoice_update(request, pk: int):
         'formset': formset,
         'client': invoice.client,
         'title': 'Edit Invoice',
-        'general_fields': GENERAL_FIELDS,
-        'proforma_fields': PROFORMA_FIELDS,
+        'general_fields': [form[field_name] for field_name in GENERAL_FIELDS],
+        'proforma_fields': [form[field_name] for field_name in PROFORMA_FIELDS],
     }
     return render(request, 'invoices/form.html', context)
 

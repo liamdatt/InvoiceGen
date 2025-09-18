@@ -42,14 +42,14 @@
           </div>
 
           <div class="row g-4 mt-1" data-invoice-type-visible="GENERAL">
-            {% for field_name in general_fields %}
-              {% include 'components/form_field.html' with field=form[field_name] %}
+            {% for field in general_fields %}
+              {% include 'components/form_field.html' with field=field %}
             {% endfor %}
           </div>
 
           <div class="row g-4 mt-1" data-invoice-type-visible="PROFORMA">
-            {% for field_name in proforma_fields %}
-              {% include 'components/form_field.html' with field=form[field_name] %}
+            {% for field in proforma_fields %}
+              {% include 'components/form_field.html' with field=field %}
             {% endfor %}
           </div>
         </div>
