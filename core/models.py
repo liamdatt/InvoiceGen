@@ -2,10 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.template.loader import render_to_string
-from django.contrib.staticfiles import finders
 from decimal import Decimal, ROUND_HALF_UP
-from pathlib import Path
-from urllib.parse import urlparse
 
 GCT_RATE = Decimal('0.15')
 
@@ -64,37 +61,12 @@ class Invoice(models.Model):
 
     def generate_general_pdf(self, overwrite: bool = True) -> None:
         try:
-            from weasyprint import HTML, default_url_fetcher
+            from playwright.sync_api import Error as PlaywrightError, sync_playwright
         except ImportError as exc:
             raise RuntimeError(
-                "WeasyPrint is required to generate invoice PDFs. Install the 'weasyprint' package to enable this feature."
+                "Playwright is required to generate invoice PDFs. Install the 'playwright' package and its browsers with "
+                "'playwright install chromium'."
             ) from exc
-
-        def django_url_fetcher(url: str):
-            parsed = urlparse(url)
-
-            if parsed.scheme in {"http", "https", "data"}:
-                return default_url_fetcher(url)
-
-            if settings.STATIC_URL and parsed.path.startswith(settings.STATIC_URL):
-                relative_path = parsed.path[len(settings.STATIC_URL):]
-                absolute_path = finders.find(relative_path)
-                if isinstance(absolute_path, (list, tuple)):
-                    absolute_path = absolute_path[0] if absolute_path else None
-                if absolute_path:
-                    return default_url_fetcher(Path(absolute_path).resolve().as_uri())
-
-            if settings.MEDIA_URL and parsed.path.startswith(settings.MEDIA_URL):
-                relative_path = parsed.path[len(settings.MEDIA_URL):]
-                media_path = (settings.MEDIA_ROOT / relative_path).resolve()
-                if media_path.exists():
-                    return default_url_fetcher(media_path.as_uri())
-
-            fallback_path = (settings.BASE_DIR / parsed.path.lstrip("/")).resolve()
-            if fallback_path.exists():
-                return default_url_fetcher(fallback_path.as_uri())
-
-            return default_url_fetcher(url)
 
         logo_candidates = [
             settings.BASE_DIR / "invoicegen" / "resources" / "logo.jpeg",
@@ -111,11 +83,25 @@ class Invoice(models.Model):
             },
         )
 
-        pdf_content = HTML(
-            string=html,
-            base_url=str(settings.BASE_DIR),
-            url_fetcher=django_url_fetcher,
-        ).write_pdf()
+        try:
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
+                try:
+                    page = browser.new_page()
+                    page.set_viewport_size({"width": 1280, "height": 1920})
+                    page.set_content(html, wait_until="networkidle")
+                    page.emulate_media(media="screen")
+                    pdf_content = page.pdf(
+                        format="A4",
+                        print_background=True,
+                        margin={"top": "0", "bottom": "0", "left": "0", "right": "0"},
+                    )
+                finally:
+                    browser.close()
+        except PlaywrightError as exc:
+            raise RuntimeError(
+                "Playwright could not render the invoice PDF. Ensure Chromium is installed via 'playwright install chromium'."
+            ) from exc
 
         filename = f"invoice-{self.pk}-general.pdf"
         if not self.pdf_file or overwrite:
