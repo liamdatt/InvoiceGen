@@ -1,0 +1,17 @@
+<div class="{{ col_class|default:'col-md-6' }}">
+  <label class="form-label fw-semibold">
+    {{ field.label }}
+    {% if field.field.required %}
+      <span class="text-danger">*</span>
+    {% endif %}
+  </label>
+  {{ field }}
+  {% if field.help_text %}
+    <div class="form-text">{{ field.help_text }}</div>
+  {% endif %}
+  {% if field.errors %}
+    <div class="text-danger small mt-1">
+      <i class="bi bi-exclamation-circle me-1"></i>{{ field.errors.0 }}
+    </div>
+  {% endif %}
+</div>
