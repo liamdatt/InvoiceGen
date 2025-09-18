@@ -80,6 +80,9 @@
           <div id="items">
             {% for f in formset %}
               <div class="item-row p-3 mb-3" style="background: #f8fafc; border-radius: 12px; border: 2px solid #e5e7eb;">
+                {% for hidden in f.hidden_fields %}
+                  {{ hidden }}
+                {% endfor %}
                 <div class="row g-3 align-items-end">
                   <div class="col-md-6">
                     <label class="form-label fw-semibold">
@@ -106,27 +109,71 @@
                     </div>
                   </div>
                   {% if f.DELETE %}
-                    <div class="col-12">
-                      <div class="form-check mt-2">
-                        {{ f.DELETE }}
-                        <label class="form-check-label text-danger fw-semibold">
-                          <i class="bi bi-trash me-1"></i>Delete this item
-                        </label>
-                      </div>
+                    <div class="d-none">
+                      {{ f.DELETE }}
                     </div>
                   {% endif %}
+                  <div class="col-12 d-flex justify-content-end mt-2">
+                    <button type="button" class="btn btn-link text-danger p-0 remove-item">
+                      <i class="bi bi-trash me-1"></i>Remove item
+                    </button>
+                  </div>
                 </div>
               </div>
             {% endfor %}
           </div>
-          
-          {% if not formset %}
-            <div class="text-center py-4" id="no-items-message">
-              <i class="bi bi-inbox" style="font-size: 3rem; color: #e5e7eb; margin-bottom: 1rem;"></i>
-              <h6 class="text-muted">No items added yet</h6>
-              <p class="text-muted small">Click "Add Item" to start building your invoice</p>
-            </div>
-          {% endif %}
+
+          <div class="text-center py-4{% if formset %} d-none{% endif %}" id="no-items-message">
+            <i class="bi bi-inbox" style="font-size: 3rem; color: #e5e7eb; margin-bottom: 1rem;"></i>
+            <h6 class="text-muted">No items added yet</h6>
+            <p class="text-muted small">Click "Add Item" to start building your invoice</p>
+          </div>
+
+          <template id="item-template">
+            {% with f=formset.empty_form %}
+              <div class="item-row p-3 mb-3" style="background: #f8fafc; border-radius: 12px; border: 2px solid #e5e7eb;">
+                {% for hidden in f.hidden_fields %}
+                  {{ hidden }}
+                {% endfor %}
+                <div class="row g-3 align-items-end">
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold">
+                      <i class="bi bi-text-left me-1"></i>Description
+                    </label>
+                    {{ f.description }}
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label fw-semibold">
+                      <i class="bi bi-tools me-1"></i>Labour Cost
+                    </label>
+                    <div class="input-group">
+                      <span class="input-group-text">$</span>
+                      {{ f.labour_cost }}
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label fw-semibold">
+                      <i class="bi bi-gear me-1"></i>Parts Cost
+                    </label>
+                    <div class="input-group">
+                      <span class="input-group-text">$</span>
+                      {{ f.parts_cost }}
+                    </div>
+                  </div>
+                  {% if f.DELETE %}
+                    <div class="d-none">
+                      {{ f.DELETE }}
+                    </div>
+                  {% endif %}
+                  <div class="col-12 d-flex justify-content-end mt-2">
+                    <button type="button" class="btn btn-link text-danger p-0 remove-item">
+                      <i class="bi bi-trash me-1"></i>Remove item
+                    </button>
+                  </div>
+                </div>
+              </div>
+            {% endwith %}
+          </template>
         </div>
       </div>
     </div>
@@ -158,34 +205,23 @@
 </form>
 
 <script>
-  // Auto-apply Bootstrap classes
-  (function(){
-    document.querySelectorAll('input:not([type="checkbox"]), select, textarea').forEach(function(el){
-      if(!el.classList.contains('form-control')) {
-        el.classList.add('form-control');
-      }
-    });
-    
-    // Style checkboxes
-    document.querySelectorAll('input[type="checkbox"]').forEach(function(el){
-      el.classList.add('form-check-input');
-    });
-  })();
-
-  // Add item functionality (placeholder - you might need to implement proper Django formset handling)
-  function addItem() {
-    // This would need proper Django formset JavaScript implementation
-    console.log('Add item functionality would be implemented here');
-    // For now, just show a message
-    alert('To add more items, you can modify the formset in the Django view or use JavaScript formset libraries.');
-  }
-
-  // Form validation feedback
   document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form');
-    const inputs = form.querySelectorAll('input, select, textarea');
-    
-    inputs.forEach(input => {
+    const itemsContainer = document.getElementById('items');
+    const noItemsMessage = document.getElementById('no-items-message');
+    const template = document.getElementById('item-template');
+    const totalFormsInput = document.getElementById('id_{{ formset.prefix }}-TOTAL_FORMS');
+
+    const styleControls = scope => {
+      scope.querySelectorAll('input:not([type="checkbox"]):not(.form-control), select:not(.form-control), textarea:not(.form-control)').forEach(el => {
+        el.classList.add('form-control');
+      });
+      scope.querySelectorAll('input[type="checkbox"]:not(.form-check-input)').forEach(el => {
+        el.classList.add('form-check-input');
+      });
+    };
+
+    const bindValidation = input => {
       input.addEventListener('input', function() {
         if (this.checkValidity()) {
           this.classList.remove('is-invalid');
@@ -195,7 +231,64 @@
           this.classList.add('is-invalid');
         }
       });
-    });
+    };
+
+    const updateNoItemsMessage = () => {
+      if (!noItemsMessage) {
+        return;
+      }
+      const hasActiveItems = Array.from(itemsContainer.querySelectorAll('.item-row')).some(row => row.dataset.removed !== 'true');
+      if (hasActiveItems) {
+        noItemsMessage.classList.add('d-none');
+      } else {
+        noItemsMessage.classList.remove('d-none');
+      }
+    };
+
+    const attachRemoveHandler = row => {
+      if (!row || row.dataset.removeHandler === '1') {
+        return;
+      }
+      const button = row.querySelector('.remove-item');
+      if (button) {
+        button.addEventListener('click', () => {
+          const deleteField = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+          if (deleteField) {
+            deleteField.checked = true;
+          }
+          row.dataset.removed = 'true';
+          row.classList.add('item-row-removed');
+          row.style.display = 'none';
+          updateNoItemsMessage();
+        });
+      }
+      row.dataset.removeHandler = '1';
+    };
+
+    styleControls(form);
+    form.querySelectorAll('input, select, textarea').forEach(bindValidation);
+    itemsContainer.querySelectorAll('.item-row').forEach(attachRemoveHandler);
+    updateNoItemsMessage();
+
+    window.addItem = function addItem() {
+      if (!template || !totalFormsInput) {
+        return;
+      }
+      const formIndex = parseInt(totalFormsInput.value, 10) || 0;
+      const html = template.innerHTML.replace(/__prefix__/g, formIndex);
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = html.trim();
+      const newRow = wrapper.firstElementChild;
+      if (!newRow) {
+        return;
+      }
+      itemsContainer.appendChild(newRow);
+      styleControls(newRow);
+      newRow.querySelectorAll('input, select, textarea').forEach(bindValidation);
+      attachRemoveHandler(newRow);
+      totalFormsInput.value = formIndex + 1;
+      updateNoItemsMessage();
+    };
   });
 </script>
 

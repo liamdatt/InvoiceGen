@@ -82,10 +82,42 @@ class Invoice(models.Model):
             font_small = ImageFont.load_default()
             font_bold = ImageFont.load_default()
 
+        # Helpers
+        def text_width(value: str, font) -> int:
+            if not value:
+                return 0
+            bbox = draw.textbbox((0, 0), value, font=font)
+            return bbox[2] - bbox[0]
+
+        def draw_right(value: str, x_right: int, y: int, font, fill="black") -> None:
+            if not value:
+                return
+            draw.text((x_right - text_width(value, font), y), value, font=font, fill=fill)
+
+        def wrap_lines(value: str, max_width: int, font) -> list[str]:
+            if not value:
+                return [""]
+            words = value.split()
+            if not words:
+                return [value.strip() or ""]
+            lines: list[str] = []
+            current = words[0]
+            for word in words[1:]:
+                candidate = f"{current} {word}" if current else word
+                if text_width(candidate, font) <= max_width:
+                    current = candidate
+                else:
+                    lines.append(current)
+                    current = word
+            if current:
+                lines.append(current)
+            return lines or [""]
+
         # Company logo and header
         left_margin = int(0.08 * w)
-        right_margin = int(0.92 * w)
+        right_margin = w - left_margin
         top_margin = int(0.06 * h)
+        content_width = right_margin - left_margin
 
         # Logo
         logo_path = settings.BASE_DIR / 'invoicegen' / 'resources' / 'logo.jpeg'
@@ -115,47 +147,98 @@ class Invoice(models.Model):
 
         # Title
         title = "ESTIMATE FOR REPAIRS"
-        tw, th = draw.textbbox((0, 0), title, font=font_bold)[2:]
-        draw.text(((w - tw) // 2, top_margin + 40), title, fill="black", font=font_bold)
+        draw.text(
+            (left_margin + (content_width - text_width(title, font_bold)) // 2, top_margin + 36),
+            title,
+            fill="black",
+            font=font_bold,
+        )
 
-        # Two-column layout helpers
-        left = left_margin
-        mid = int(0.58 * w)
-        right = int(0.9 * w)
-
-        y0 = int(0.28 * h)
-        draw.text((left, y0 + 0), f"Client:  {self.client.name}", fill="black", font=font_regular)
-        draw.text((left, y0 + 45), f"Vehicle: {self.vehicle}", fill="black", font=font_regular)
-        draw.text((left, y0 + 90), f"Lic#:    {self.lic_no}", fill="black", font=font_regular)
-        draw.text((left, y0 + 135), f"Chassis#: {self.chassis_no}", fill="black", font=font_regular)
+        # Metadata block
+        meta_top = header_y + 220
+        meta_line_height = 42
         date_str = self.date.strftime("%-d-%b-%y") if hasattr(self.date, 'strftime') else str(self.date)
-        draw.text((mid + 180, y0 + 0), f"Date: {date_str}", fill="black", font=font_regular)
+        meta_left_labels = [
+            ("Client:", self.client.name),
+            ("Vehicle:", self.vehicle or ""),
+            ("Lic#:", self.lic_no or ""),
+            ("Chassis#:", self.chassis_no or ""),
+        ]
+        for index, (label, value) in enumerate(meta_left_labels):
+            y = meta_top + index * meta_line_height
+            draw.text((left_margin, y), f"{label}  {value}", fill="black", font=font_regular)
+        draw_right(f"Date: {date_str}", right_margin, meta_top, font_regular)
 
-        # Separator line
-        draw.line([(left_margin, y0 + 180), (right_margin, y0 + 180)], fill="#222", width=2)
+        separator_y = meta_top + meta_line_height * 4 + 20
+        draw.line([(left_margin, separator_y), (right_margin, separator_y)], fill="#1f2937", width=2)
 
-        # Table headers
-        y_items = y0 + 210
-        draw.text((left, y_items - 30), "Labour", fill="black", font=font_bold)
-        draw.text((right - 120, y_items - 30), "Parts", fill="black", font=font_bold)
+        # Items table
+        table_top = separator_y + 36
+        table_left = left_margin
+        table_right = right_margin
+        header_height = 60
+        desc_col_width = int(content_width * 0.55)
+        labour_col_width = int(content_width * 0.2)
+        parts_col_width = content_width - desc_col_width - labour_col_width
+        labour_col_left = table_left + desc_col_width
+        parts_col_left = labour_col_left + labour_col_width
+        desc_text_x = table_left + 24
+        labour_right = parts_col_left - 24
+        parts_right = table_right - 24
 
-        row_h = 36
-        for i, item in enumerate(self.items.all()):
-            y = y_items + i * row_h
-            draw.text((left, y), item.description, fill="black", font=font_small)
-            draw.text((mid, y), self._money(item.labour_cost), fill="black", font=font_small)
-            draw.text((right, y), self._money(item.parts_cost), fill="black", font=font_small)
+        draw.rounded_rectangle(
+            [(table_left, table_top), (table_right, table_top + header_height)],
+            radius=18,
+            fill="#f1f5f9",
+            outline="#d0d5dd",
+        )
+        draw.text((desc_text_x, table_top + 18), "Description", fill="#0f172a", font=font_bold)
+        draw_right("Labour", labour_right, table_top + 18, font_bold, fill="#0f172a")
+        draw_right("Parts", parts_right, table_top + 18, font_bold, fill="#0f172a")
 
-        y_totals = max(y_items + (self.items.count() + 1) * row_h + 20, int(0.78 * h))
-        draw.text((left, y_totals), "Cost", fill="black", font=font_bold)
-        draw.text((mid, y_totals), self._money(self.labour_subtotal), fill="black", font=font_bold)
-        draw.text((right, y_totals), self._money(self.parts_subtotal), fill="black", font=font_bold)
+        items = list(self.items.all())
+        body_top = table_top + header_height + 12
+        line_height = 36
+        current_y = body_top
 
-        draw.text((left, y_totals + 40), "Plus 15% GCT", fill="black", font=font_bold)
-        draw.text((right, y_totals + 40), self._money(self.gct), fill="black", font=font_bold)
+        if items:
+            for item in items:
+                desc_lines = wrap_lines(item.description, desc_col_width - 32, font_small)
+                row_height = max(line_height * len(desc_lines), line_height)
+                for idx, line in enumerate(desc_lines):
+                    draw.text((desc_text_x, current_y + idx * line_height), line, fill="black", font=font_small)
+                draw_right(self._money(item.labour_cost), labour_right, current_y, font_small)
+                draw_right(self._money(item.parts_cost), parts_right, current_y, font_small)
+                row_bottom = current_y + row_height
+                draw.line([(table_left, row_bottom + 8), (table_right, row_bottom + 8)], fill="#e2e8f0", width=2)
+                current_y = row_bottom + 24
+        else:
+            draw.text((desc_text_x, current_y), "No invoice items have been added yet.", fill="#475569", font=font_small)
+            current_y += line_height + 24
 
-        draw.text((left, y_totals + 85), "Total Cost", fill="black", font=font_bold)
-        draw.text((right, y_totals + 85), self._money(self.total), fill="black", font=font_bold)
+        table_bottom = max(current_y - 24, table_top + header_height)
+        draw.line([(labour_col_left, table_top), (labour_col_left, table_bottom)], fill="#d8dee9", width=2)
+        draw.line([(parts_col_left, table_top), (parts_col_left, table_bottom)], fill="#d8dee9", width=2)
+
+        totals_top = current_y + 12
+        totals_rows = [
+            ("Cost", self._money(self.labour_subtotal), self._money(self.parts_subtotal)),
+            ("Plus 15% GCT", "", self._money(self.gct)),
+            ("Total Cost", "", self._money(self.total)),
+        ]
+        totals_line_height = 48
+        for label, labour_value, parts_value in totals_rows:
+            draw.text((labour_col_left - 36, totals_top), label, fill="black", font=font_bold)
+            if labour_value:
+                draw_right(labour_value, labour_right, totals_top, font_bold)
+            draw_right(parts_value, parts_right, totals_top, font_bold)
+            totals_top += totals_line_height
+
+        # Signature block
+        signature_line_y = max(totals_top + 60, h - int(0.16 * h))
+        draw.line([(left_margin, signature_line_y), (left_margin + 320, signature_line_y)], fill="#111111", width=3)
+        draw.text((left_margin, signature_line_y + 18), "ERROL DUHANEY", fill="black", font=font_bold)
+        draw.text((left_margin, signature_line_y + 52), "MANAGING DIRECTOR", fill="black", font=font_regular)
 
         buf = io.BytesIO()
         img.save(buf, format="PDF", resolution=300)
