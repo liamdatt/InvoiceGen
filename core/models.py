@@ -62,6 +62,11 @@ class Invoice(models.Model):
     def generate_general_pdf(self, overwrite: bool = True) -> None:
         from PIL import Image, ImageDraw, ImageFont  # lazy import
 
+        scale = 1.6
+
+        def scaled(value: int) -> int:
+            return max(1, int(value * scale))
+
         def load_font(name: str, size: int) -> ImageFont.FreeTypeFont:
             try:
                 return ImageFont.truetype(name, size)
@@ -89,31 +94,37 @@ class Invoice(models.Model):
                 lines.append(current)
             return lines or [""]
 
-        page_w, page_h = 1654, 2339  # approx A4 at 150 dpi
+        page_w, page_h = scaled(1654), scaled(2339)  # approx A4 at higher resolution
         background = Image.new("RGB", (page_w, page_h), color="#f8fafc")
         draw = ImageDraw.Draw(background)
 
-        font_title = load_font("DejaVuSerif-Bold.ttf", 64)
-        font_heading = load_font("DejaVuSerif-Bold.ttf", 40)
-        font_body = load_font("DejaVuSerif.ttf", 34)
-        font_small = load_font("DejaVuSerif.ttf", 30)
-        font_caption = load_font("DejaVuSerif.ttf", 28)
+        font_title = load_font("DejaVuSerif-Bold.ttf", scaled(64))
+        font_heading = load_font("DejaVuSerif-Bold.ttf", scaled(40))
+        font_body = load_font("DejaVuSerif.ttf", scaled(34))
+        font_small = load_font("DejaVuSerif.ttf", scaled(30))
+        font_caption = load_font("DejaVuSerif.ttf", scaled(28))
 
         outer_margin_x = int(0.06 * page_w)
         outer_margin_y = int(0.05 * page_h)
-        card_radius = 28
+        card_radius = scaled(28)
         card_bbox = (
             outer_margin_x,
             outer_margin_y,
             page_w - outer_margin_x,
             page_h - outer_margin_y,
         )
-        draw.rounded_rectangle(card_bbox, radius=card_radius, fill="white", outline="#d0d7e2", width=4)
+        draw.rounded_rectangle(
+            card_bbox,
+            radius=card_radius,
+            fill="white",
+            outline="#d0d7e2",
+            width=max(1, scaled(4)),
+        )
 
-        content_left = outer_margin_x + 80
-        content_right = page_w - outer_margin_x - 80
+        content_left = outer_margin_x + scaled(80)
+        content_right = page_w - outer_margin_x - scaled(80)
         content_width = content_right - content_left
-        cursor_y = outer_margin_y + 120
+        cursor_y = outer_margin_y + scaled(120)
 
         # Logo and brand block
         logo_path = settings.BASE_DIR / 'invoicegen' / 'resources' / 'logo.jpeg'
@@ -123,7 +134,7 @@ class Invoice(models.Model):
                 logo_path = alt
 
         logo_max_width = int(content_width * 0.22)
-        brand_gap = 40
+        brand_gap = scaled(40)
         if logo_path.exists():
             try:
                 logo = Image.open(logo_path).convert('RGBA')
@@ -147,9 +158,9 @@ class Invoice(models.Model):
         text_y = cursor_y
         for text, font in brand_lines:
             draw.text((text_x, text_y), text, font=font, fill="#111111")
-            text_y += font.size + 6
+            text_y += font.size + scaled(6)
 
-        cursor_y = max(text_y, cursor_y + 240)
+        cursor_y = max(text_y, cursor_y + scaled(240))
 
         title_text = "ESTIMATE FOR REPAIRS"
         title_bbox = draw.textbbox((0, 0), title_text, font=font_title)
@@ -160,9 +171,13 @@ class Invoice(models.Model):
             fill="#111111",
         )
 
-        cursor_y += font_title.size + 50
-        draw.line([(content_left, cursor_y), (content_right, cursor_y)], fill="#111111", width=3)
-        cursor_y += 40
+        cursor_y += font_title.size + scaled(50)
+        draw.line(
+            [(content_left, cursor_y), (content_right, cursor_y)],
+            fill="#111111",
+            width=max(1, scaled(3)),
+        )
+        cursor_y += scaled(40)
 
         meta_left = content_left
         meta_right = content_right
@@ -175,56 +190,64 @@ class Invoice(models.Model):
         ]
         for label, value in meta_rows:
             draw.text((meta_left, cursor_y), f"{label}:", font=font_heading, fill="#111111")
-            draw.text((meta_left + 200, cursor_y), value, font=font_body, fill="#111111")
-            cursor_y += font_body.size + 12
+            draw.text((meta_left + scaled(200), cursor_y), value, font=font_body, fill="#111111")
+            cursor_y += font_body.size + scaled(12)
 
         date_str = self.date.strftime("%-d-%b-%y") if hasattr(self.date, 'strftime') else str(self.date)
         right_align(meta_right, meta_top, f"Date: {date_str}", font=font_body)
 
-        cursor_y += 10
-        draw.line([(content_left, cursor_y), (content_right, cursor_y)], fill="#d0d7e2", width=2)
-        cursor_y += 40
+        cursor_y += scaled(10)
+        draw.line(
+            [(content_left, cursor_y), (content_right, cursor_y)],
+            fill="#d0d7e2",
+            width=max(1, scaled(2)),
+        )
+        cursor_y += scaled(40)
 
-        table_header_height = 60
+        table_header_height = scaled(60)
         description_width = int(content_width * 0.55)
         labour_col_right = content_left + description_width + int(content_width * 0.22)
         parts_col_right = content_right
 
         header_bbox = (content_left, cursor_y, content_right, cursor_y + table_header_height)
         draw.rectangle(header_bbox, fill="#e2e8f0")
-        draw.text((content_left + 20, cursor_y + 12), "Description", font=font_heading, fill="#111111")
-        right_align(parts_col_right, cursor_y + 12, "Parts Cost", font=font_heading)
-        right_align(labour_col_right, cursor_y + 12, "Labour Cost", font=font_heading)
+        draw.text((content_left + scaled(20), cursor_y + scaled(12)), "Description", font=font_heading, fill="#111111")
+        right_align(parts_col_right, cursor_y + scaled(12), "Parts Cost", font=font_heading)
+        right_align(labour_col_right, cursor_y + scaled(12), "Labour Cost", font=font_heading)
 
-        cursor_y += table_header_height + 10
+        cursor_y += table_header_height + scaled(10)
 
         row_y = cursor_y
         items_qs = list(self.items.all())
         for item in items_qs:
-            desc_lines = wrap_description(item.description, font_small, description_width - 40)
-            line_height = font_small.size + 10
+            desc_lines = wrap_description(item.description, font_small, description_width - scaled(40))
+            line_height = font_small.size + scaled(10)
             row_height = max(line_height * len(desc_lines), line_height)
 
             # row separator
-            draw.line([(content_left, row_y + row_height + 10), (content_right, row_y + row_height + 10)], fill="#e2e8f0", width=2)
+            draw.line(
+                [(content_left, row_y + row_height + scaled(10)), (content_right, row_y + row_height + scaled(10))],
+                fill="#e2e8f0",
+                width=max(1, scaled(2)),
+            )
 
             text_y_line = row_y
             for line in desc_lines:
-                draw.text((content_left + 20, text_y_line), line, font=font_small, fill="#111111")
+                draw.text((content_left + scaled(20), text_y_line), line, font=font_small, fill="#111111")
                 text_y_line += line_height
 
-            right_align(labour_col_right, row_y + 5, self._money(item.labour_cost), font=font_small)
-            right_align(parts_col_right, row_y + 5, self._money(item.parts_cost), font=font_small)
+            right_align(labour_col_right, row_y + scaled(5), self._money(item.labour_cost), font=font_small)
+            right_align(parts_col_right, row_y + scaled(5), self._money(item.parts_cost), font=font_small)
 
-            row_y += row_height + 20
+            row_y += row_height + scaled(20)
 
         if not items_qs:
-            draw.text((content_left + 20, row_y), "No invoice items have been added yet.", font=font_small, fill="#111111")
-            row_y += font_small.size + 20
+            draw.text((content_left + scaled(20), row_y), "No invoice items have been added yet.", font=font_small, fill="#111111")
+            row_y += font_small.size + scaled(20)
 
-        cursor_y = row_y + 20
+        cursor_y = row_y + scaled(20)
 
-        totals_label_x = content_left + description_width - 40
+        totals_label_x = content_left + description_width - scaled(40)
         totals = [
             ("Cost", self._money(self.labour_subtotal), self._money(self.parts_subtotal)),
             ("Plus 15% GCT", "", self._money(self.gct)),
@@ -237,13 +260,17 @@ class Invoice(models.Model):
                 right_align(labour_col_right, cursor_y, labour_val, font=font_heading)
             if parts_val:
                 right_align(parts_col_right, cursor_y, parts_val, font=font_heading)
-            cursor_y += font_heading.size + 24
+            cursor_y += font_heading.size + scaled(24)
 
-        cursor_y += 60
-        draw.line([(content_left, cursor_y), (content_left + 320, cursor_y)], fill="#111111", width=3)
-        cursor_y += 20
+        cursor_y += scaled(60)
+        draw.line(
+            [(content_left, cursor_y), (content_left + scaled(320), cursor_y)],
+            fill="#111111",
+            width=max(1, scaled(3)),
+        )
+        cursor_y += scaled(20)
         draw.text((content_left, cursor_y), "ERROL DUHANEY", font=font_heading, fill="#111111")
-        cursor_y += font_heading.size + 6
+        cursor_y += font_heading.size + scaled(6)
         draw.text((content_left, cursor_y), "MANAGING DIRECTOR", font=font_body, fill="#111111")
 
         buf = io.BytesIO()
