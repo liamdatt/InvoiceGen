@@ -61,16 +61,11 @@
   <div class="row g-4 mb-4" data-invoice-type-visible="GENERAL">
     <div class="col-12">
       <div class="card" style="border-radius: 16px;">
-        <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border-radius: 16px 16px 0 0 !important;">
-          <div>
-            <h5 class="mb-0 fw-bold">
-              <i class="bi bi-list-ul me-2" style="color: #667eea;"></i>Invoice Items
-            </h5>
-            <small class="text-muted">Add services and parts for this invoice</small>
-          </div>
-          <button type="button" class="btn btn-outline-primary btn-sm" onclick="addItem()" style="border-radius: 8px;">
-            <i class="bi bi-plus me-1"></i>Add Item
-          </button>
+        <div class="card-header" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border-radius: 16px 16px 0 0 !important;">
+          <h5 class="mb-0 fw-bold">
+            <i class="bi bi-list-ul me-2" style="color: #667eea;"></i>Invoice Items
+          </h5>
+          <small class="text-muted">Add services and parts for this invoice</small>
         </div>
         <div class="card-body p-4">
           {{ formset.management_form }}
@@ -105,16 +100,21 @@
                       {{ f.parts_cost }}
                     </div>
                   </div>
-                  {% if f.DELETE %}
-                    <div class="col-12">
-                      <div class="form-check mt-2">
-                        {{ f.DELETE }}
-                        <label class="form-check-label text-danger fw-semibold">
-                          <i class="bi bi-trash me-1"></i>Delete this item
-                        </label>
-                      </div>
+                  <div class="col-12 d-flex flex-column flex-md-row justify-content-md-between align-items-md-center gap-2 mt-3 item-row-footer">
+                    <span class="text-muted small item-remove-feedback d-none">
+                      <i class="bi bi-info-circle me-1"></i>This item will be removed when you save the invoice.
+                    </span>
+                    <div class="d-flex gap-2 align-items-center">
+                      {% if f.DELETE %}
+                        <span class="d-none delete-checkbox-wrapper">
+                          {{ f.DELETE }}
+                        </span>
+                      {% endif %}
+                      <button type="button" class="btn btn-outline-danger btn-sm" data-action="remove-item" style="border-radius: 8px;">
+                        <i class="bi bi-trash me-1"></i>Remove Item
+                      </button>
                     </div>
-                  {% endif %}
+                  </div>
                 </div>
               </div>
             {% endfor %}
@@ -150,24 +150,35 @@
                     {{ formset.empty_form.parts_cost }}
                   </div>
                 </div>
-                {% if formset.empty_form.DELETE %}
-                  <div class="col-12">
-                    <div class="form-check mt-2">
-                      {{ formset.empty_form.DELETE }}
-                      <label class="form-check-label text-danger fw-semibold">
-                        <i class="bi bi-trash me-1"></i>Delete this item
-                      </label>
-                    </div>
+                <div class="col-12 d-flex flex-column flex-md-row justify-content-md-between align-items-md-center gap-2 mt-3 item-row-footer">
+                  <span class="text-muted small item-remove-feedback d-none">
+                    <i class="bi bi-info-circle me-1"></i>This item will be removed when you save the invoice.
+                  </span>
+                  <div class="d-flex gap-2 align-items-center">
+                    {% if formset.empty_form.DELETE %}
+                      <span class="d-none delete-checkbox-wrapper">
+                        {{ formset.empty_form.DELETE }}
+                      </span>
+                    {% endif %}
+                    <button type="button" class="btn btn-outline-danger btn-sm" data-action="remove-item" style="border-radius: 8px;">
+                      <i class="bi bi-trash me-1"></i>Remove Item
+                    </button>
                   </div>
-                {% endif %}
+                </div>
               </div>
             </div>
           </template>
-          
+
           <div class="text-center py-4 d-none" id="no-items-message">
             <i class="bi bi-inbox" style="font-size: 3rem; color: #e5e7eb; margin-bottom: 1rem;"></i>
             <h6 class="text-muted">No items added yet</h6>
             <p class="text-muted small">Click "Add Item" to start building your invoice</p>
+          </div>
+
+          <div class="d-flex justify-content-center justify-content-md-end mt-3">
+            <button type="button" class="btn btn-outline-primary" onclick="addItem()" style="border-radius: 10px;">
+              <i class="bi bi-plus me-1"></i>Add Item
+            </button>
           </div>
         </div>
       </div>
@@ -289,6 +300,69 @@
     }
   }
 
+  function rememberOriginalRequired(row) {
+    row.querySelectorAll('input, select, textarea').forEach(function(input) {
+      if (!input.dataset.originalRequired) {
+        input.dataset.originalRequired = input.required ? '1' : '0';
+      }
+    });
+  }
+
+  function setItemRowDeleteState(row, shouldDelete) {
+    if (!row) {
+      return;
+    }
+
+    const deleteField = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+    const feedback = row.querySelector('.item-remove-feedback');
+    const actionButton = row.querySelector('[data-action="remove-item"]');
+
+    if (deleteField) {
+      deleteField.checked = shouldDelete;
+    }
+
+    row.dataset.deleted = shouldDelete ? '1' : '0';
+    row.classList.toggle('item-row-deleted', shouldDelete);
+
+    row.querySelectorAll('input, select, textarea').forEach(function(input) {
+      if (input === deleteField) {
+        return;
+      }
+      const wasRequired = input.dataset.originalRequired === '1';
+      input.required = shouldDelete ? false : wasRequired;
+      if (shouldDelete) {
+        input.classList.remove('is-valid', 'is-invalid');
+      }
+    });
+
+    if (feedback) {
+      feedback.classList.toggle('d-none', !shouldDelete);
+    }
+
+    if (actionButton) {
+      if (shouldDelete) {
+        actionButton.classList.remove('btn-outline-danger');
+        actionButton.classList.add('btn-outline-secondary');
+        actionButton.innerHTML = '<i class="bi bi-arrow-counterclockwise me-1"></i>Undo Remove';
+      } else {
+        actionButton.classList.remove('btn-outline-secondary');
+        actionButton.classList.add('btn-outline-danger');
+        actionButton.innerHTML = '<i class="bi bi-trash me-1"></i>Remove Item';
+      }
+    }
+  }
+
+  function initializeItemRow(row) {
+    if (!row) {
+      return;
+    }
+
+    rememberOriginalRequired(row);
+    const deleteField = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+    const isDeleted = deleteField ? deleteField.checked : false;
+    setItemRowDeleteState(row, isDeleted);
+  }
+
   function addItem() {
     const itemsContainer = document.getElementById('items');
     const prefix = itemsContainer.dataset.formsetPrefix;
@@ -311,25 +385,46 @@
 
     applyBootstrapStyles(newForm);
     attachValidationHandlers(newForm);
+    initializeItemRow(newForm);
     toggleEmptyState();
   }
 
   document.addEventListener('DOMContentLoaded', function() {
     applyBootstrapStyles();
     attachValidationHandlers();
+    document.querySelectorAll('.item-row').forEach(initializeItemRow);
     toggleEmptyState();
     updateInvoiceTypeUI();
 
     const itemsContainer = document.getElementById('items');
-    itemsContainer.addEventListener('change', function(event) {
-      if (event.target.matches('input[type="checkbox"][name$="-DELETE"]')) {
-        const row = event.target.closest('.item-row');
-        if (row) {
-          row.classList.toggle('item-row-deleted', event.target.checked);
+    if (itemsContainer) {
+      itemsContainer.addEventListener('change', function(event) {
+        if (event.target.matches('input[type="checkbox"][name$="-DELETE"]')) {
+          const row = event.target.closest('.item-row');
+          if (row) {
+            setItemRowDeleteState(row, event.target.checked);
+          }
+          toggleEmptyState();
         }
+      });
+
+      itemsContainer.addEventListener('click', function(event) {
+        const button = event.target.closest('[data-action="remove-item"]');
+        if (!button) {
+          return;
+        }
+
+        event.preventDefault();
+        const row = button.closest('.item-row');
+        if (!row) {
+          return;
+        }
+
+        const shouldDelete = row.dataset.deleted !== '1';
+        setItemRowDeleteState(row, shouldDelete);
         toggleEmptyState();
-      }
-    });
+      });
+    }
 
     const invoiceTypeField = document.querySelector('[name="invoice_type"]');
     if (invoiceTypeField) {
@@ -358,6 +453,16 @@
   .item-row.item-row-deleted {
     opacity: 0.6;
     border-style: dashed;
+    background: rgba(229, 231, 235, 0.6) !important;
+  }
+
+  .item-row-footer {
+    border-top: 1px dashed #d1d5db;
+    padding-top: 1rem;
+  }
+
+  .item-remove-feedback {
+    font-style: italic;
   }
   
   .form-control.is-valid {
