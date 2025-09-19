@@ -1,7 +1,7 @@
 {% load static %}
 {% load humanize %}
-<div class="invoice-screen">
-  <div class="invoice-paper">
+<div class="invoice-screen{% if for_pdf %} invoice-screen--pdf{% endif %}">
+  <div class="invoice-paper{% if for_pdf %} invoice-paper--pdf{% endif %}">
     <div class="invoice-header">
       <div class="brand-block">
         {% if for_pdf and logo_src %}
@@ -110,6 +110,11 @@
     background: transparent;
   }
 
+  .invoice-screen--pdf {
+    display: block;
+    padding: 0;
+  }
+
   .invoice-paper {
     background: #ffffff;
     color: #111111;
@@ -122,6 +127,12 @@
     box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
     font-family: 'Times New Roman', serif;
     box-sizing: border-box;
+  }
+
+  .invoice-paper--pdf {
+    box-shadow: none;
+    border: none;
+    padding: 3rem 2.5rem;
   }
 
   .invoice-header {
@@ -221,6 +232,14 @@
     background: #f8f8f8;
   }
 
+  .items-table thead {
+    display: table-header-group;
+  }
+
+  .items-table tr {
+    page-break-inside: avoid;
+  }
+
   .items-table .labour,
   .items-table .parts {
     width: 160px;
@@ -233,6 +252,11 @@
     flex-direction: column;
     gap: 0.5rem;
     font-size: 1rem;
+  }
+
+  .totals,
+  .signature-block {
+    page-break-inside: avoid;
   }
 
   .totals-row {
