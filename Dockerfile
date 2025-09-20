@@ -9,6 +9,9 @@ COPY requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install -r requirements.txt
 
+# Install Chromium and required system deps for Playwright PDF rendering
+RUN python -m playwright install --with-deps chromium
+
 COPY . .
 
 COPY docker-entrypoint.sh /entrypoint.sh
