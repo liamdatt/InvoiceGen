@@ -140,11 +140,14 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [
+# Only include static dirs that actually exist to avoid W004 warnings in containers
+_static_candidates = [
     BASE_DIR / 'static',
-    BASE_DIR / 'resources',  # project-level resources (if present)
-    BASE_DIR / 'invoicegen' / 'resources',  # current location of logo/template images
+    BASE_DIR / 'resources',
+    BASE_DIR / 'invoicegen' / 'resources',
+    BASE_DIR.parent / 'resources',
 ]
+STATICFILES_DIRS = [p for p in _static_candidates if p.exists()]
 
 # Media files (PDFs)
 MEDIA_URL = '/media/'
