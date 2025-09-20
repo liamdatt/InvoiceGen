@@ -60,6 +60,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -155,6 +156,9 @@ _static_candidates = [
     BASE_DIR.parent / 'resources',
 ]
 STATICFILES_DIRS = [p for p in _static_candidates if p.exists()]
+
+# WhiteNoise: serve compressed static files efficiently
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files (PDFs)
 MEDIA_URL = '/media/'
