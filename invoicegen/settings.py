@@ -37,6 +37,13 @@ DEBUG = env('DEBUG', default=False)
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'] if DEBUG else [])
 
+# CSRF trusted origins (comma-separated list), e.g. "https://example.com,https://www.example.com"
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[])
+
+# If running behind a reverse proxy/tunnel that terminates TLS, let Django
+# know the original scheme so CSRF and secure cookies work correctly.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 
 # Application definition
 
