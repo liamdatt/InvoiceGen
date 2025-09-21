@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="card" style="border-radius: 20px;">
+    <div class="card-header">
+      <h5 class="mb-0">Select Google Drive Folder</h5>
+    </div>
+    <div class="card-body">
+      <p class="text-muted">Choose where invoice PDFs should be stored in your Google Drive. You can pick from your recent folders or paste an ID manually.</p>
+      <form method="post" class="mb-4">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="folder_id" class="form-label">Folder ID</label>
+          <input type="text" class="form-control" id="folder_id" name="folder_id" placeholder="e.g. 1AbCdEFghIJklmnop" required>
+          <div class="form-text">Paste the Drive folder ID or choose from the list below.</div>
+        </div>
+        <input type="hidden" name="folder_name" id="folder_name_field">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-save me-1"></i>Save Folder
+        </button>
+      </form>
+      <h6 class="fw-bold">Available folders</h6>
+      {% if folders %}
+        <div class="list-group">
+          {% for folder in folders %}
+            <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-folder-id="{{ folder.id }}" data-folder-name="{{ folder.name }}">
+              <span><i class="bi bi-folder me-2 text-warning"></i>{{ folder.name|default:folder.id }}</span>
+              <span class="badge bg-primary rounded-pill">Select</span>
+            </button>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-muted">No folders found. Create one in Drive and refresh this page.</p>
+      {% endif %}
+      {% if current_folder %}
+        <div class="alert alert-info mt-4">
+          <strong>Current folder:</strong> {{ current_folder }}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('[data-folder-id]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          const folderIdInput = document.getElementById('folder_id');
+          const folderNameField = document.getElementById('folder_name_field');
+          folderIdInput.value = this.getAttribute('data-folder-id');
+          folderNameField.value = this.getAttribute('data-folder-name');
+          folderIdInput.focus();
+        });
+      });
+    });
+  </script>
+{% endblock %}

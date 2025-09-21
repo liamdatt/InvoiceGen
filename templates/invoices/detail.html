@@ -1,5 +1,39 @@
 {% extends 'base.html' %}
 
 {% block content %}
+  <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center mb-4 gap-3">
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-primary" href="{% url 'invoice_pdf' invoice.pk %}">
+        <i class="bi bi-download me-1"></i>Download PDF
+      </a>
+      {% if invoice.drive_web_view_link %}
+        <a class="btn btn-outline-secondary" href="{{ invoice.drive_web_view_link }}" target="_blank" rel="noopener">
+          <i class="bi bi-cloud-arrow-up me-1"></i>View on Google Drive
+        </a>
+      {% endif %}
+    </div>
+    <div>
+      {% if can_email %}
+        <form method="post" action="{% url 'invoice_send_email' invoice.pk %}" class="d-inline">
+          {% csrf_token %}
+          <button class="btn btn-success" type="submit">
+            <i class="bi bi-envelope-paper me-1"></i>Email to {{ invoice.client.email }}
+          </button>
+        </form>
+      {% elif google_enabled %}
+        <a class="btn btn-outline-primary" href="{% url 'google_connect' %}">
+          <i class="bi bi-google me-1"></i>Connect Google to email invoices
+        </a>
+      {% else %}
+        <span class="text-muted">Configure Google credentials to email invoices automatically.</span>
+      {% endif %}
+    </div>
+  </div>
+  {% if invoice.drive_web_view_link %}
+    <div class="alert alert-info d-flex align-items-center gap-2">
+      <i class="bi bi-check-circle-fill"></i>
+      <span>Latest copy stored in Google Drive. <a href="{{ invoice.drive_web_view_link }}" class="alert-link" target="_blank" rel="noopener">Open folder</a>.</span>
+    </div>
+  {% endif %}
   {% include 'invoices/_detail_document.html' %}
 {% endblock %}

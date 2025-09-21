@@ -1,0 +1,15 @@
+Hello {{ invoice.client.name }},
+
+Please find your invoice (#{% if invoice.pk %}{{ invoice.pk }}{% endif %}) attached to this email.
+
+{% if invoice.invoice_type == 'PROFORMA' %}This proforma invoice covers {{ invoice.proforma_make }} {{ invoice.proforma_model }}.{% else %}This invoice covers work completed on {{ invoice.vehicle|default:'your vehicle' }}.{% endif %}
+
+Total Due: {{ invoice.total }}
+Date: {{ invoice.date }}
+
+{% if drive_link %}A copy has also been saved to Google Drive: {{ drive_link }}
+
+{% endif %}If you have any questions, feel free to reply to this email.
+
+Kind regards,
+{{ sender_name }}
