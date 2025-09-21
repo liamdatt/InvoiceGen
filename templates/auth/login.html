@@ -3,30 +3,30 @@
 <div class="row justify-content-center align-items-center" style="min-height: 70vh;">
   <div class="col-md-5 col-lg-4">
     <!-- Logo and Welcome -->
-    <div class="text-center mb-5">
-      <div class="mb-4">
-        <div class="d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px; background: var(--primary-gradient); border-radius: 20px; margin-bottom: 1rem;">
-          <i class="bi bi-shield-check" style="font-size: 2rem; color: white;"></i>
+    <div class="text-center mb-4">
+      <div class="mb-3">
+        <div class="d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px; background: var(--primary-color); border-radius: var(--border-radius); margin-bottom: 1rem;">
+          <i class="bi bi-shield-check" style="font-size: 1.5rem; color: white;"></i>
         </div>
       </div>
-      <h2 class="fw-bold mb-2">Welcome Back</h2>
+      <h3 class="fw-bold mb-2">Welcome Back</h3>
       <p class="text-muted">Sign in to manage your invoices</p>
     </div>
 
     <!-- Login Card -->
-    <div class="card" style="border-radius: 20px; border: none; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
-      <div class="card-body p-5">
+    <div class="card">
+      <div class="card-body p-4">
         <form method="post">
           {% csrf_token %}
           
           {% if form.non_field_errors %}
-            <div class="alert alert-danger" role="alert" style="border-radius: 12px;">
+            <div class="alert alert-danger">
               <i class="bi bi-exclamation-circle me-2"></i>
               {{ form.non_field_errors }}
             </div>
           {% endif %}
           
-          <div class="mb-4">
+          <div class="mb-3">
             <label class="form-label fw-semibold">
               <i class="bi bi-person me-2"></i>Username
             </label>
@@ -38,7 +38,7 @@
             {% endif %}
           </div>
           
-          <div class="mb-4">
+          <div class="mb-3">
             <label class="form-label fw-semibold">
               <i class="bi bi-lock me-2"></i>Password
             </label>
@@ -50,7 +50,7 @@
             {% endif %}
           </div>
           
-          <button class="btn btn-primary w-100 py-3" type="submit" style="border-radius: 12px; font-weight: 600;">
+          <button class="btn btn-primary w-100 py-2" type="submit">
             <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
           </button>
         </form>
@@ -58,39 +58,11 @@
     </div>
     
     <!-- Sign Up Link -->
-    <div class="text-center mt-4">
-      <p class="text-muted">
+    <div class="text-center mt-3">
+      <p class="text-muted small">
         Don't have an account? 
         <a href="{% url 'signup' %}" class="fw-semibold">Create one here</a>
       </p>
-    </div>
-    
-    <!-- Features -->
-    <div class="row g-3 mt-4">
-      <div class="col-4">
-        <div class="text-center">
-          <div class="mb-2">
-            <i class="bi bi-people" style="font-size: 1.5rem; color: var(--primary-color);"></i>
-          </div>
-          <small class="text-muted fw-semibold">Manage Clients</small>
-        </div>
-      </div>
-      <div class="col-4">
-        <div class="text-center">
-          <div class="mb-2">
-            <i class="bi bi-file-earmark-text" style="font-size: 1.5rem; color: var(--primary-color);"></i>
-          </div>
-          <small class="text-muted fw-semibold">Create Invoices</small>
-        </div>
-      </div>
-      <div class="col-4">
-        <div class="text-center">
-          <div class="mb-2">
-            <i class="bi bi-graph-up" style="font-size: 1.5rem; color: var(--primary-color);"></i>
-          </div>
-          <small class="text-muted fw-semibold">Track Growth</small>
-        </div>
-      </div>
     </div>
   </div>
 </div>
@@ -114,49 +86,8 @@
     if (inputs.length > 0) {
       inputs[0].focus();
     }
-    
-    // Add validation feedback
-    inputs.forEach(input => {
-      input.addEventListener('input', function() {
-        if (this.checkValidity()) {
-          this.classList.remove('is-invalid');
-          this.classList.add('is-valid');
-        } else {
-          this.classList.remove('is-valid');
-          this.classList.add('is-invalid');
-        }
-      });
-    });
   });
 </script>
-
-<style>
-  .form-control {
-    padding: 0.8rem 1rem;
-    font-size: 1rem;
-    border: 2px solid #e5e7eb;
-    background: #f9fafb;
-  }
-  
-  .form-control:focus {
-    background: white;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-  }
-  
-  .btn-primary {
-    background: var(--primary-gradient);
-    border: none;
-    font-size: 1.1rem;
-    transition: all 0.3s ease;
-  }
-  
-  .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
-    background: var(--primary-gradient);
-  }
-</style>
 {% endblock %}
 
 

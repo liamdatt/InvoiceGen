@@ -1,33 +1,33 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+<div class="row justify-content-center align-items-center" style="min-height: 70vh;">
   <div class="col-md-6 col-lg-5">
     <!-- Logo and Welcome -->
-    <div class="text-center mb-5">
-      <div class="mb-4">
-        <div class="d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px; background: var(--primary-gradient); border-radius: 20px; margin-bottom: 1rem;">
-          <i class="bi bi-person-plus" style="font-size: 2rem; color: white;"></i>
+    <div class="text-center mb-4">
+      <div class="mb-3">
+        <div class="d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px; background: var(--primary-color); border-radius: var(--border-radius); margin-bottom: 1rem;">
+          <i class="bi bi-person-plus" style="font-size: 1.5rem; color: white;"></i>
         </div>
       </div>
-      <h2 class="fw-bold mb-2">Get Started</h2>
+      <h3 class="fw-bold mb-2">Get Started</h3>
       <p class="text-muted">Create your account to start managing invoices</p>
     </div>
 
     <!-- Signup Card -->
-    <div class="card" style="border-radius: 20px; border: none; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
-      <div class="card-body p-5">
+    <div class="card">
+      <div class="card-body p-4">
         <form method="post">
           {% csrf_token %}
           
           {% if form.non_field_errors %}
-            <div class="alert alert-danger" role="alert" style="border-radius: 12px;">
+            <div class="alert alert-danger">
               <i class="bi bi-exclamation-circle me-2"></i>
               {{ form.non_field_errors }}
             </div>
           {% endif %}
           
           {% for field in form %}
-            <div class="mb-4">
+            <div class="mb-3">
               <label class="form-label fw-semibold">
                 {% if field.name == 'username' %}
                   <i class="bi bi-person me-2"></i>
@@ -43,7 +43,7 @@
               </label>
               {{ field }}
               {% if field.help_text %}
-                <div class="form-text">
+                <div class="form-text small">
                   <i class="bi bi-info-circle me-1"></i>{{ field.help_text }}
                 </div>
               {% endif %}
@@ -55,7 +55,7 @@
             </div>
           {% endfor %}
           
-          <button class="btn btn-primary w-100 py-3" type="submit" style="border-radius: 12px; font-weight: 600;">
+          <button class="btn btn-primary w-100 py-2" type="submit">
             <i class="bi bi-person-plus me-2"></i>Create Account
           </button>
         </form>
@@ -63,45 +63,11 @@
     </div>
     
     <!-- Sign In Link -->
-    <div class="text-center mt-4">
-      <p class="text-muted">
+    <div class="text-center mt-3">
+      <p class="text-muted small">
         Already have an account? 
         <a href="{% url 'login' %}" class="fw-semibold">Sign in here</a>
       </p>
-    </div>
-    
-    <!-- Benefits -->
-    <div class="row g-3 mt-4">
-      <div class="col-12">
-        <div class="card" style="border-radius: 16px; background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%); border: none;">
-          <div class="card-body p-4">
-            <h6 class="fw-bold mb-3 text-center">
-              <i class="bi bi-star me-2" style="color: var(--primary-color);"></i>
-              Why Choose InvoiceGen?
-            </h6>
-            <div class="row g-3">
-              <div class="col-md-4">
-                <div class="text-center">
-                  <i class="bi bi-lightning-charge" style="font-size: 1.5rem; color: var(--primary-color); margin-bottom: 0.5rem;"></i>
-                  <div class="small fw-semibold">Fast & Easy</div>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="text-center">
-                  <i class="bi bi-shield-check" style="font-size: 1.5rem; color: var(--primary-color); margin-bottom: 0.5rem;"></i>
-                  <div class="small fw-semibold">Secure</div>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="text-center">
-                  <i class="bi bi-award" style="font-size: 1.5rem; color: var(--primary-color); margin-bottom: 0.5rem;"></i>
-                  <div class="small fw-semibold">Professional</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </div>
@@ -125,79 +91,8 @@
     if (inputs.length > 0) {
       inputs[0].focus();
     }
-    
-    // Add validation feedback
-    inputs.forEach(input => {
-      input.addEventListener('input', function() {
-        if (this.checkValidity()) {
-          this.classList.remove('is-invalid');
-          this.classList.add('is-valid');
-        } else {
-          this.classList.remove('is-valid');
-          this.classList.add('is-invalid');
-        }
-      });
-    });
-    
-    // Password strength indicator
-    const passwordInput = document.querySelector('input[name="password1"]');
-    if (passwordInput) {
-      passwordInput.addEventListener('input', function() {
-        const password = this.value;
-        const strength = calculatePasswordStrength(password);
-        updatePasswordStrengthIndicator(strength);
-      });
-    }
   });
-  
-  function calculatePasswordStrength(password) {
-    let strength = 0;
-    if (password.length >= 8) strength += 25;
-    if (/[a-z]/.test(password)) strength += 25;
-    if (/[A-Z]/.test(password)) strength += 25;
-    if (/[0-9]/.test(password)) strength += 25;
-    return strength;
-  }
-  
-  function updatePasswordStrengthIndicator(strength) {
-    // This could be implemented to show a visual password strength indicator
-    console.log('Password strength:', strength + '%');
-  }
 </script>
-
-<style>
-  .form-control {
-    padding: 0.8rem 1rem;
-    font-size: 1rem;
-    border: 2px solid #e5e7eb;
-    background: #f9fafb;
-  }
-  
-  .form-control:focus {
-    background: white;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-  }
-  
-  .btn-primary {
-    background: var(--primary-gradient);
-    border: none;
-    font-size: 1.1rem;
-    transition: all 0.3s ease;
-  }
-  
-  .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
-    background: var(--primary-gradient);
-  }
-  
-  .form-text {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    margin-top: 0.5rem;
-  }
-</style>
 {% endblock %}
 
 
