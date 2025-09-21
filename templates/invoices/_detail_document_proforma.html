@@ -7,7 +7,7 @@
         {% if for_pdf and logo_src %}
           <img src="{{ logo_src }}" alt="Stepmath Auto Limited" class="brand-logo">
         {% elif not for_pdf %}
-          {% static 'logo.jpeg' as logo_url %}
+          {% static 'invoicegen/logo.jpeg' as logo_url %}
           <img src="{{ logo_url }}" alt="Stepmath Auto Limited" class="brand-logo">
         {% endif %}
         <div class="brand-text">
