@@ -8,3 +8,6 @@ psycopg[binary]==3.2.3
 gunicorn==23.0.0
 django-environ==0.11.2
 whitenoise==6.7.0
+google-auth==2.37.0
+google-auth-oauthlib==1.2.1
+google-api-python-client==2.154.0
