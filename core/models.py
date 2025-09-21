@@ -1,10 +1,15 @@
 from __future__ import annotations
 
-from django.db import models
-from django.conf import settings
+from django.contrib.staticfiles import finders
 from django.core.files.base import ContentFile
+from django.db import models
 from django.template.loader import render_to_string
+from django.utils import timezone
 from decimal import Decimal, ROUND_HALF_UP
+from pathlib import Path
+
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 GCT_RATE = Decimal('0.15')
 
@@ -41,6 +46,10 @@ class Invoice(models.Model):
     proforma_currency = models.CharField("Currency", max_length=10, blank=True, default="JMD")
 
     pdf_file = models.FileField(upload_to='invoices/', blank=True, null=True)
+    drive_file_id = models.CharField(max_length=255, blank=True)
+    drive_web_view_link = models.URLField(blank=True)
+    drive_download_link = models.URLField(blank=True)
+    drive_synced_at = models.DateTimeField(blank=True, null=True)
 
     class Meta:
         ordering = ['-date', '-id']
@@ -79,7 +88,27 @@ class Invoice(models.Model):
     def proforma_total_formatted(self) -> str:
         return self._money(self.proforma_price, self.proforma_currency)
 
-    def _generate_pdf(self, template_name: str, filename: str, overwrite: bool = True) -> None:
+    def _logo_data_url(self) -> str | None:
+        logo_path = None
+        for candidate in ("invoicegen/logo.jpeg", "logo.jpeg"):
+            resolved = finders.find(candidate)
+            if resolved:
+                logo_path = Path(resolved)
+                break
+
+        if not logo_path or not logo_path.exists():
+            return None
+
+        try:
+            import base64
+
+            with open(logo_path, "rb") as f:
+                logo_data = f.read()
+            return f"data:image/jpeg;base64,{base64.b64encode(logo_data).decode()}"
+        except Exception:
+            return logo_path.resolve().as_uri()
+
+    def _render_pdf(self, template_name: str) -> bytes:
         try:
             from playwright.sync_api import Error as PlaywrightError, sync_playwright
         except ImportError as exc:
@@ -88,23 +117,7 @@ class Invoice(models.Model):
                 "'playwright install chromium'."
             ) from exc
 
-        logo_candidates = [
-            settings.BASE_DIR / "invoicegen" / "resources" / "logo.jpeg",
-            settings.BASE_DIR / "resources" / "logo.jpeg",
-        ]
-        logo_path = next((p for p in logo_candidates if p.exists()), None)
-
-        # Convert logo to data URL for reliable PDF embedding
-        logo_data_url = None
-        if logo_path and logo_path.exists():
-            try:
-                import base64
-                with open(logo_path, "rb") as f:
-                    logo_data = f.read()
-                    logo_data_url = f"data:image/jpeg;base64,{base64.b64encode(logo_data).decode()}"
-            except Exception:
-                # Fallback to file URI if base64 encoding fails
-                logo_data_url = logo_path.resolve().as_uri()
+        logo_data_url = self._logo_data_url()
 
         html = render_to_string(
             template_name,
@@ -135,16 +148,77 @@ class Invoice(models.Model):
                 "Playwright could not render the invoice PDF. Ensure Chromium is installed via 'playwright install chromium'."
             ) from exc
 
+        return pdf_content
+
+    def _store_pdf(self, filename: str, pdf_content: bytes, overwrite: bool = True) -> None:
+        if overwrite and self.pdf_file:
+            self.pdf_file.delete(save=False)
         if not self.pdf_file or overwrite:
             self.pdf_file.save(filename, ContentFile(pdf_content), save=True)
 
-    def generate_general_pdf(self, overwrite: bool = True) -> None:
+    def generate_general_pdf(self, overwrite: bool = True, store_local: bool = True) -> bytes:
         filename = f"invoice-{self.pk}-general.pdf"
-        self._generate_pdf("invoices/detail_pdf.html", filename, overwrite=overwrite)
+        pdf_content = self._render_pdf("invoices/detail_pdf.html")
+        if store_local:
+            self._store_pdf(filename, pdf_content, overwrite=overwrite)
+        return pdf_content
 
-    def generate_proforma_pdf(self, overwrite: bool = True) -> None:
+    def generate_proforma_pdf(self, overwrite: bool = True, store_local: bool = True) -> bytes:
         filename = f"invoice-{self.pk}-proforma.pdf"
-        self._generate_pdf("invoices/detail_pdf_proforma.html", filename, overwrite=overwrite)
+        pdf_content = self._render_pdf("invoices/detail_pdf_proforma.html")
+        if store_local:
+            self._store_pdf(filename, pdf_content, overwrite=overwrite)
+        return pdf_content
+
+    def pdf_filename(self) -> str:
+        suffix = "general" if self.invoice_type == Invoice.Type.GENERAL else "proforma"
+        return f"invoice-{self.pk}-{suffix}.pdf"
+
+    def generate_pdf_bytes(self, overwrite: bool = False, store_local: bool = False) -> tuple[str, bytes]:
+        if self.invoice_type == Invoice.Type.GENERAL:
+            content = self.generate_general_pdf(overwrite=overwrite, store_local=store_local)
+        else:
+            content = self.generate_proforma_pdf(overwrite=overwrite, store_local=store_local)
+        return self.pdf_filename(), content
+
+    def mark_drive_file(
+        self,
+        file_id: str,
+        web_view_link: str | None,
+        download_link: str | None,
+        *,
+        clear_local: bool = True,
+    ) -> None:
+        if clear_local and self.pdf_file:
+            self.pdf_file.delete(save=False)
+            self.pdf_file = None
+        self.drive_file_id = file_id
+        self.drive_web_view_link = web_view_link or ""
+        self.drive_download_link = download_link or ""
+        self.drive_synced_at = timezone.now()
+        self.save(update_fields=[
+            "drive_file_id",
+            "drive_web_view_link",
+            "drive_download_link",
+            "drive_synced_at",
+            "pdf_file",
+        ])
+
+    def clear_drive_file(self) -> None:
+        self.drive_file_id = ""
+        self.drive_web_view_link = ""
+        self.drive_download_link = ""
+        self.drive_synced_at = None
+        self.save(update_fields=[
+            "drive_file_id",
+            "drive_web_view_link",
+            "drive_download_link",
+            "drive_synced_at",
+        ])
+
+    @property
+    def has_drive_file(self) -> bool:
+        return bool(self.drive_file_id)
 
 
 class InvoiceItem(models.Model):
@@ -158,3 +232,80 @@ class InvoiceItem(models.Model):
 
     def __str__(self) -> str:
         return f"{self.description} (L:{self.labour_cost} P:{self.parts_cost})"
+
+
+class GoogleAccount(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='google_account')
+    email = models.EmailField(blank=True)
+    credentials = models.JSONField(default=dict, blank=True)
+    drive_folder_id = models.CharField(max_length=255, blank=True)
+    drive_folder_name = models.CharField(max_length=255, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"Google account for {self.user}" if self.user_id else "Unassigned Google account"
+
+    @staticmethod
+    def _parse_expiry(expiry: str | None):
+        if not expiry:
+            return None
+        from datetime import datetime
+
+        try:
+            return datetime.fromisoformat(expiry)
+        except ValueError:
+            return None
+
+    def _serialize_credentials(self, credentials) -> dict:
+        data = {
+            "token": credentials.token,
+            "refresh_token": credentials.refresh_token,
+            "token_uri": credentials.token_uri,
+            "client_id": credentials.client_id,
+            "client_secret": credentials.client_secret,
+            "scopes": list(credentials.scopes or []),
+        }
+        if getattr(credentials, "expiry", None):
+            data["expiry"] = credentials.expiry.isoformat()
+        return data
+
+    def save_credentials(self, credentials) -> None:
+        self.credentials = self._serialize_credentials(credentials)
+        self.save(update_fields=["credentials", "updated_at"])
+
+    def get_credentials(self):
+        from google.oauth2.credentials import Credentials
+        from google.auth.transport.requests import Request
+
+        data = dict(self.credentials or {})
+        if not data:
+            raise RuntimeError("No Google credentials stored for this user.")
+        expiry = data.get("expiry")
+        if isinstance(expiry, str):
+            parsed = self._parse_expiry(expiry)
+            if parsed is not None:
+                data["expiry"] = parsed
+            else:
+                data.pop("expiry", None)
+
+        credentials = Credentials(**data)
+        if credentials.expired and credentials.refresh_token:
+            credentials.refresh(Request())
+            self.save_credentials(credentials)
+        return credentials
+
+    def clear_credentials(self) -> None:
+        self.credentials = {}
+        self.drive_folder_id = ""
+        self.drive_folder_name = ""
+        self.save(update_fields=["credentials", "drive_folder_id", "drive_folder_name", "updated_at"])
+
+    @property
+    def is_connected(self) -> bool:
+        return bool(self.credentials)
+
+    @property
+    def drive_folder_display(self) -> str:
+        if not self.drive_folder_id:
+            return ""
+        return self.drive_folder_name or self.drive_folder_id

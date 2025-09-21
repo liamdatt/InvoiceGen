@@ -153,6 +153,7 @@ _static_candidates = [
     BASE_DIR / 'static',
     BASE_DIR / 'resources',
     BASE_DIR / 'invoicegen' / 'resources',
+    BASE_DIR / 'invoicegen' / 'static',
     BASE_DIR.parent / 'resources',
 ]
 STATICFILES_DIRS = [p for p in _static_candidates if p.exists()]
@@ -173,3 +174,8 @@ LOGOUT_REDIRECT_URL = 'login'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# Google integration
+GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID', default=None)
+GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET', default=None)
