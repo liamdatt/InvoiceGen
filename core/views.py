@@ -7,6 +7,7 @@ from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.template.loader import render_to_string
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 from .forms import (
     ClientForm,
@@ -14,6 +15,9 @@ from .forms import (
     INVOICE_PROFORMA_FIELDS,
     InvoiceForm,
     ItemFormSet,
+    WhatsAppEnrollmentForm,
+    WhatsAppFollowUpForm,
+    WhatsAppSettingsForm,
 )
 from .google import (
     GoogleConfigurationError,
@@ -25,7 +29,19 @@ from .google import (
     send_invoice_email,
     upload_invoice_pdf,
 )
-from .models import Client, GoogleAccount, Invoice
+from .models import (
+    Client,
+    GoogleAccount,
+    Invoice,
+    WhatsAppFollowUp,
+    WhatsAppMessageLog,
+    WhatsAppSettings,
+)
+from .whatsapp import (
+    WhatsAppConfigurationError,
+    WhatsAppSendError,
+    send_follow_up_message,
+)
 
 
 @login_required
@@ -56,6 +72,101 @@ def dashboard(request):
         'google_drive_folder': drive_folder,
     }
     return render(request, 'dashboard.html', context)
+
+
+@login_required
+def whatsapp_manager(request):
+    settings_obj = WhatsAppSettings.load()
+    followups = list(
+        WhatsAppFollowUp.objects.select_related('client')
+        .order_by('client__name')
+    )
+    followup_entries = [
+        {
+            'followup': follow_up,
+            'form': WhatsAppFollowUpForm(instance=follow_up, prefix=f'f{follow_up.pk}'),
+        }
+        for follow_up in followups
+    ]
+    eligible_clients = Client.objects.filter(whatsapp_follow_up__isnull=True).order_by('name')
+
+    settings_form = WhatsAppSettingsForm(instance=settings_obj)
+    enrollment_form = WhatsAppEnrollmentForm(eligible_clients=eligible_clients)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'settings':
+            settings_form = WhatsAppSettingsForm(request.POST, instance=settings_obj)
+            if settings_form.is_valid():
+                settings_form.save()
+                for follow_up in WhatsAppFollowUp.objects.filter(follow_up_days_override__isnull=True):
+                    follow_up.refresh_schedule(settings=settings_obj, commit=True)
+                messages.success(request, 'WhatsApp settings updated.')
+                return redirect('whatsapp_manager')
+            messages.error(request, 'Please correct the errors in the WhatsApp settings form.')
+        elif action == 'enroll':
+            enrollment_form = WhatsAppEnrollmentForm(request.POST, eligible_clients=eligible_clients)
+            if enrollment_form.is_valid():
+                client = enrollment_form.cleaned_data['client']
+                last_service_date = enrollment_form.cleaned_data['last_service_date']
+                follow_up_days_override = enrollment_form.cleaned_data['follow_up_days_override']
+
+                follow_up, _ = WhatsAppFollowUp.objects.get_or_create(client=client)
+                follow_up.is_active = True
+                follow_up.last_service_date = last_service_date
+                follow_up.follow_up_days_override = follow_up_days_override
+                follow_up.refresh_schedule(settings=settings_obj, commit=False)
+                follow_up.save()
+                follow_up.refresh_schedule(settings=settings_obj, commit=True)
+                messages.success(request, f'{client.name} added to WhatsApp follow-ups.')
+                return redirect('whatsapp_manager')
+            messages.error(request, 'Please correct the errors in the enrollment form.')
+
+    today = timezone.localdate()
+    context = {
+        'settings_form': settings_form,
+        'enrollment_form': enrollment_form,
+        'followup_entries': followup_entries,
+        'eligible_clients': eligible_clients,
+        'settings': settings_obj,
+        'today': today,
+        'recent_logs': WhatsAppMessageLog.objects.select_related('follow_up', 'follow_up__client')[:20],
+    }
+    return render(request, 'whatsapp/manager.html', context)
+
+
+@login_required
+@require_POST
+def whatsapp_followup_update(request, pk):
+    follow_up = get_object_or_404(WhatsAppFollowUp, pk=pk)
+    form = WhatsAppFollowUpForm(request.POST, instance=follow_up, prefix=f'f{follow_up.pk}')
+    if form.is_valid():
+        follow_up = form.save()
+        follow_up.refresh_schedule(settings=WhatsAppSettings.load(), commit=True)
+        messages.success(request, f"Updated WhatsApp follow-up for {follow_up.client.name}.")
+    else:
+        errors = '; '.join([' '.join(v) for v in form.errors.values()])
+        messages.error(request, f"Unable to update follow-up: {errors}")
+    return redirect('whatsapp_manager')
+
+
+@login_required
+@require_POST
+def whatsapp_followup_send_now(request, pk):
+    follow_up = get_object_or_404(WhatsAppFollowUp.objects.select_related('client'), pk=pk)
+    try:
+        send_follow_up_message(
+            follow_up,
+            trigger=WhatsAppMessageLog.Trigger.MANUAL,
+            settings_obj=WhatsAppSettings.load(),
+        )
+    except WhatsAppConfigurationError as exc:
+        messages.error(request, str(exc))
+    except WhatsAppSendError as exc:
+        messages.error(request, str(exc))
+    else:
+        messages.success(request, f"WhatsApp message sent to {follow_up.client.name}.")
+    return redirect('whatsapp_manager')
 
 
 def signup(request):
