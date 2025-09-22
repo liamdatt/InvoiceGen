@@ -4,6 +4,9 @@ from . import views
 urlpatterns = [
     path('signup/', views.signup, name='signup'),
     path('', views.dashboard, name='dashboard'),
+    path('whatsapp/', views.whatsapp_manager, name='whatsapp_manager'),
+    path('whatsapp/<int:pk>/update/', views.whatsapp_followup_update, name='whatsapp_followup_update'),
+    path('whatsapp/<int:pk>/send-now/', views.whatsapp_followup_send_now, name='whatsapp_followup_send_now'),
 
     path('google/connect/', views.google_connect, name='google_connect'),
     path('google/callback/', views.google_callback, name='google_callback'),
