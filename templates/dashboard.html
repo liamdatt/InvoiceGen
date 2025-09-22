@@ -1,27 +1,69 @@
 {% extends 'base.html' %}
 {% block content %}
-<!-- Welcome Section -->
-<div class="row mb-4">
+<!-- Hero Welcome Section -->
+<div class="row mb-5">
   <div class="col-12">
-    <div class="card" style="background: var(--primary-color); color: white;">
-      <div class="card-body p-4">
+    <div class="card fade-in" style="background: var(--primary-gradient); color: white; border: none;">
+      <div class="card-body p-5">
         <div class="row align-items-center">
-          <div class="col-md-8">
-            <h1 class="h3 fw-bold mb-2" style="color: white;">Welcome back, {{ user.username }}</h1>
-            <p class="mb-3" style="color: rgba(255,255,255,0.9);">
-              Manage your clients and invoices efficiently.
-            </p>
-            <div class="d-flex gap-2">
-              <a class="btn btn-light btn-sm" href="{% url 'clients_create' %}">
-                <i class="bi bi-person-plus me-1"></i>Add Client
-              </a>
-              <a class="btn btn-outline-light btn-sm" href="{% url 'clients_list' %}">
-                <i class="bi bi-people me-1"></i>View Clients
-              </a>
+          <div class="col-lg-8">
+            <div class="mb-4">
+              <h1 class="display-5 fw-bold mb-3" style="color: white; text-shadow: 0 4px 8px rgba(0,0,0,0.3);">
+                Welcome back, {{ user.username }}
+              </h1>
+              <p class="lead mb-0" style="color: rgba(255,255,255,0.9); font-weight: 300;">
+                Your client-focused invoice management dashboard
+              </p>
             </div>
           </div>
-          <div class="col-md-4 text-center">
-            <i class="bi bi-file-earmark-text" style="font-size: 3rem; opacity: 0.5;"></i>
+          <div class="col-lg-4 text-center">
+            <div class="d-inline-flex align-items-center justify-content-center" 
+                 style="width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; backdrop-filter: blur(10px);">
+              <i class="bi bi-people" style="font-size: 3rem; color: rgba(255,255,255,0.8);"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Client Search & Quick Actions -->
+<div class="row mb-5">
+  <div class="col-12">
+    <div class="card fade-in glass" style="animation-delay: 0.2s;">
+      <div class="card-body p-4">
+        <div class="row align-items-start">
+          <div class="col-12">
+            <h3 class="display-title mb-4 text-center">
+              <i class="bi bi-search me-3" style="color: var(--accent-color);"></i>
+              Find Client & Create Invoice
+            </h3>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-lg-8 mx-auto">
+            <div class="search-container mb-4">
+              <i class="bi bi-search search-icon"></i>
+              <input type="text" 
+                     class="form-control" 
+                     id="clientSearch" 
+                     placeholder="Search clients by name or email to create invoice..."
+                     autocomplete="off">
+              <div id="searchResults" class="search-results"></div>
+            </div>
+          </div>
+        </div>
+        <div class="row justify-content-center">
+          <div class="col-md-6 col-lg-4">
+            <div class="d-grid gap-2">
+              <a class="btn btn-primary btn-lg" href="{% url 'clients_create' %}">
+                <i class="bi bi-person-plus me-2"></i>Add New Client
+              </a>
+              <a class="btn btn-outline-primary" href="{% url 'clients_list' %}">
+                <i class="bi bi-people me-2"></i>View All Clients
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -31,124 +73,145 @@
 
 <!-- Google Integration -->
 {% if google_enabled %}
-<div class="row mb-4">
+<div class="row mb-5">
   <div class="col-12">
-    <div class="card">
-      <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
-        <div>
-          <h6 class="fw-bold mb-1">Google Integration</h6>
-          {% if google_account and google_account.is_connected %}
-            <p class="text-muted mb-1 small">Connected as <strong>{{ google_email|default:"Unknown" }}</strong></p>
-            {% if google_drive_folder %}
-              <p class="text-muted mb-0 small">Sync to: <strong>{{ google_drive_folder }}</strong></p>
+    <div class="card fade-in glass" style="animation-delay: 0.4s;">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            <div class="me-4">
+              <div class="d-inline-flex align-items-center justify-content-center" 
+                   style="width: 60px; height: 60px; background: var(--accent-gradient); border-radius: var(--border-radius-lg);">
+                <i class="bi bi-google" style="font-size: 1.5rem; color: white;"></i>
+              </div>
+            </div>
+            <div>
+              <h5 class="display-title mb-1">Google Workspace</h5>
+              {% if google_account and google_account.is_connected %}
+                <p class="text-muted mb-1">Connected as <strong>{{ google_email|default:"Unknown" }}</strong></p>
+                {% if google_drive_folder %}
+                  <p class="text-muted mb-0 small">
+                    <i class="bi bi-folder-check me-1" style="color: var(--accent-color);"></i>
+                    Syncing to: <strong>{{ google_drive_folder }}</strong>
+                  </p>
+                {% else %}
+                  <p class="text-muted mb-0 small">
+                    <i class="bi bi-folder-x me-1" style="color: var(--text-muted);"></i>
+                    Choose a Drive folder for automatic backup
+                  </p>
+                {% endif %}
+              {% else %}
+                <p class="text-muted mb-0">Connect for automatic email delivery and Drive backup</p>
+              {% endif %}
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            {% if google_account and google_account.is_connected %}
+              <a class="btn btn-outline-primary" href="{% url 'google_drive_select' %}">
+                <i class="bi bi-folder2-open me-1"></i>Configure Drive
+              </a>
+              <form method="post" action="{% url 'google_disconnect' %}" class="d-inline">
+                {% csrf_token %}
+                <button class="btn btn-outline-secondary" type="submit">
+                  <i class="bi bi-plug-fill me-1"></i>Disconnect
+                </button>
+              </form>
             {% else %}
-              <p class="text-muted mb-0 small">Choose a Drive folder for invoices</p>
+              <a class="btn btn-primary" href="{% url 'google_connect' %}">
+                <i class="bi bi-google me-1"></i>Connect Google
+              </a>
             {% endif %}
-          {% else %}
-            <p class="text-muted mb-0 small">Connect Google for email and Drive backup</p>
-          {% endif %}
-        </div>
-        <div class="d-flex gap-2">
-          {% if google_account and google_account.is_connected %}
-            <a class="btn btn-primary btn-sm" href="{% url 'google_drive_select' %}">
-              <i class="bi bi-folder2-open me-1"></i>Select Folder
-            </a>
-            <form method="post" action="{% url 'google_disconnect' %}" class="d-inline">
-              {% csrf_token %}
-              <button class="btn btn-outline-secondary btn-sm" type="submit">
-                <i class="bi bi-plug-fill me-1"></i>Disconnect
-              </button>
-            </form>
-          {% else %}
-            <a class="btn btn-primary btn-sm" href="{% url 'google_connect' %}">
-              <i class="bi bi-google me-1"></i>Connect
-            </a>
-          {% endif %}
+          </div>
         </div>
       </div>
     </div>
   </div>
 </div>
 {% else %}
-<div class="row mb-4">
+<div class="row mb-5">
   <div class="col-12">
-    <div class="alert alert-warning">
-      <h6 class="fw-bold mb-1"><i class="bi bi-info-circle me-2"></i>Google integration unavailable</h6>
-      <p class="mb-0 small">Set <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code> environment variables to enable features.</p>
+    <div class="alert fade-in" style="animation-delay: 0.4s;">
+      <div class="d-flex align-items-center">
+        <i class="bi bi-info-circle me-3" style="font-size: 1.5rem; color: var(--accent-color);"></i>
+        <div>
+          <h6 class="fw-bold mb-1">Google Integration Available</h6>
+          <p class="mb-0">Configure <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code> to enable automatic email delivery and Drive backup.</p>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 {% endif %}
 
-<!-- Stats Cards -->
-<div class="row g-3 mb-4">
-  <div class="col-md-6">
-    <div class="card text-center" style="background: var(--primary-color); color: white;">
-      <div class="card-body p-3">
-        <i class="bi bi-people" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
-        <h4 class="fw-bold">{{ clients|length }}</h4>
-        <p class="mb-0 small" style="opacity: 0.9;">Total Clients</p>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-6">
-    <div class="card text-center" style="background: var(--bg-secondary); color: var(--text-primary);">
-      <div class="card-body p-3">
-        <i class="bi bi-file-earmark-text" style="font-size: 2rem; margin-bottom: 0.5rem; color: var(--primary-color);"></i>
-        <h4 class="fw-bold">{{ invoices|length }}</h4>
-        <p class="mb-0 small text-muted">Total Invoices</p>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Main Content Grid -->
-<div class="row g-3">
-  <!-- Clients Section -->
+<!-- Client & Invoice Management -->
+<div class="row g-4">
+  <!-- Recent Clients Section -->
   <div class="col-lg-6">
-    <div class="card h-100">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <div>
-          <h6 class="mb-0 fw-bold">
-            <i class="bi bi-people me-2" style="color: var(--primary-color);"></i>Recent Clients
-          </h6>
-          <small class="text-muted">Manage your clients</small>
+    <div class="card h-100 fade-in glass" style="animation-delay: 0.6s;">
+      <div class="card-header">
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            <div class="me-3">
+              <div class="d-inline-flex align-items-center justify-content-center" 
+                   style="width: 40px; height: 40px; background: var(--primary-gradient); border-radius: var(--border-radius);">
+                <i class="bi bi-people" style="color: white; font-size: 1rem;"></i>
+              </div>
+            </div>
+            <div>
+              <h5 class="display-title mb-1">Recent Clients</h5>
+              <small class="text-muted">Your latest client connections</small>
+            </div>
+          </div>
+          <a class="btn btn-outline-primary btn-sm" href="{% url 'clients_list' %}">
+            <i class="bi bi-arrow-right me-1"></i>View All
+          </a>
         </div>
-        <a class="btn btn-primary btn-sm" href="{% url 'clients_list' %}">
-          <i class="bi bi-eye me-1"></i>View All
-        </a>
       </div>
       <div class="card-body p-0">
         <div class="list-group list-group-flush">
           {% for c in clients|slice:":5" %}
             <div class="list-group-item d-flex justify-content-between align-items-center">
-              <div>
-                <div class="d-flex align-items-center">
-                  <div class="avatar me-3" style="width: 32px; height: 32px; background: var(--primary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 0.8rem;">
-                    {{ c.name|first|upper }}
+              <div class="d-flex align-items-center flex-grow-1">
+                <div class="me-3">
+                  <div class="d-inline-flex align-items-center justify-content-center" 
+                       style="width: 45px; height: 45px; background: var(--primary-gradient); border-radius: 50%; box-shadow: var(--glow-primary);">
+                    <span style="color: white; font-weight: 700; font-size: 1rem;">{{ c.name|first|upper }}</span>
                   </div>
-                  <div>
-                    <a href="{% url 'clients_detail' c.pk %}" class="fw-semibold text-decoration-none">{{ c.name }}</a>
-                    <div class="small text-muted">{{ c.email|default:"No email" }}</div>
+                </div>
+                <div class="flex-grow-1">
+                  <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                      <a href="{% url 'clients_detail' c.pk %}" class="fw-bold text-decoration-none" style="color: var(--text-primary);">
+                        {{ c.name }}
+                      </a>
+                      <div class="small text-muted">
+                        <i class="bi bi-envelope me-1"></i>{{ c.email|default:"No email provided" }}
+                      </div>
+                    </div>
+                    <div class="d-flex gap-1">
+                      <a class="btn btn-outline-primary btn-sm" href="{% url 'clients_update' c.pk %}" title="Edit Client">
+                        <i class="bi bi-pencil"></i>
+                      </a>
+                      <a class="btn btn-primary btn-sm" href="{% url 'invoice_create' c.pk %}" title="Create Invoice">
+                        <i class="bi bi-file-plus"></i>
+                      </a>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div class="d-flex gap-1">
-                <a class="btn btn-outline-primary btn-sm" href="{% url 'clients_update' c.pk %}">
-                  <i class="bi bi-pencil"></i>
-                </a>
-                <a class="btn btn-primary btn-sm" href="{% url 'invoice_create' c.pk %}">
-                  <i class="bi bi-plus"></i>
-                </a>
-              </div>
             </div>
           {% empty %}
-            <div class="text-center py-4">
-              <i class="bi bi-person-plus" style="font-size: 2rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
-              <h6 class="text-muted">No clients yet</h6>
-              <p class="text-muted small">Start by adding your first client</p>
-              <a class="btn btn-primary btn-sm" href="{% url 'clients_create' %}">
-                <i class="bi bi-person-plus me-1"></i>Add Client
+            <div class="text-center py-5">
+              <div class="mb-4">
+                <div class="d-inline-flex align-items-center justify-content-center" 
+                     style="width: 80px; height: 80px; background: var(--bg-glass); border-radius: 50%; border: 2px dashed var(--border-color);">
+                  <i class="bi bi-person-plus" style="font-size: 2rem; color: var(--text-muted);"></i>
+                </div>
+              </div>
+              <h6 class="text-muted mb-2">No clients yet</h6>
+              <p class="text-muted small mb-3">Start building your client base</p>
+              <a class="btn btn-primary" href="{% url 'clients_create' %}">
+                <i class="bi bi-person-plus me-2"></i>Add Your First Client
               </a>
             </div>
           {% endfor %}
@@ -159,74 +222,108 @@
 
   <!-- Recent Invoices Section -->
   <div class="col-lg-6">
-    <div class="card h-100">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <div>
-          <h6 class="mb-0 fw-bold">
-            <i class="bi bi-file-earmark-text me-2" style="color: var(--primary-color);"></i>Recent Invoices
-          </h6>
-          <small class="text-muted">Track your billing</small>
+    <div class="card h-100 fade-in glass" style="animation-delay: 0.8s;">
+      <div class="card-header">
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            <div class="me-3">
+              <div class="d-inline-flex align-items-center justify-content-center" 
+                   style="width: 40px; height: 40px; background: var(--secondary-gradient); border-radius: var(--border-radius);">
+                <i class="bi bi-file-earmark-text" style="color: white; font-size: 1rem;"></i>
+              </div>
+            </div>
+            <div>
+              <h5 class="display-title mb-1">Recent Invoices</h5>
+              <small class="text-muted">Your latest billing activity</small>
+            </div>
+          </div>
+          {% if clients %}
+          <div class="dropdown">
+            <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+              <i class="bi bi-plus me-1"></i>Create
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+          {% for c in clients %}
+                <li>
+                  <a class="dropdown-item d-flex align-items-center" href="{% url 'invoice_create' c.pk %}">
+                    <div class="me-2" style="width: 20px; height: 20px; background: var(--primary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: white; font-weight: bold;">
+                      {{ c.name|first|upper }}
+                    </div>
+                    {{ c.name }}
+                  </a>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
         </div>
-        {% if clients %}
-        <div class="dropdown">
-          <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-            <i class="bi bi-plus me-1"></i>New
-          </button>
-          <ul class="dropdown-menu">
-        {% for c in clients %}
-              <li><a class="dropdown-item" href="{% url 'invoice_create' c.pk %}">{{ c.name }}</a></li>
-            {% endfor %}
-          </ul>
-        </div>
-        {% endif %}
       </div>
       <div class="card-body p-0">
         <div class="list-group list-group-flush">
           {% for inv in invoices|slice:":5" %}
             <div class="list-group-item">
-              <div class="d-flex justify-content-between align-items-center">
-                <div class="flex-grow-1">
-                  <div class="d-flex align-items-center mb-2">
-                    <div class="invoice-icon me-3" style="width: 32px; height: 32px; background: var(--bg-secondary); border-radius: var(--border-radius); display: flex; align-items: center; justify-content: center; color: var(--primary-color);">
-                      <i class="bi bi-file-earmark-text"></i>
-                    </div>
-                    <div>
-                      <a href="{% url 'invoice_detail' inv.pk %}" class="fw-semibold text-decoration-none">
-                        Invoice #{{ inv.pk }}
-                      </a>
-                      <div class="small text-muted">{{ inv.client.name }}</div>
+              <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center flex-grow-1">
+                  <div class="me-3">
+                    <div class="d-inline-flex align-items-center justify-content-center" 
+                         style="width: 45px; height: 45px; background: var(--accent-gradient); border-radius: var(--border-radius-lg); box-shadow: var(--glow-accent);">
+                      <i class="bi bi-file-earmark-text" style="color: white; font-size: 1rem;"></i>
                     </div>
                   </div>
-                  <div class="d-flex gap-2 small text-muted">
-                    <span><i class="bi bi-calendar3 me-1"></i>{{ inv.date }}</span>
-                    <span><i class="bi bi-tag me-1"></i>{{ inv.get_invoice_type_display }}</span>
+                  <div class="flex-grow-1">
+                    <div class="d-flex align-items-center justify-content-between">
+                      <div>
+                        <a href="{% url 'invoice_detail' inv.pk %}" class="fw-bold text-decoration-none" style="color: var(--text-primary);">
+                          Invoice #{{ inv.pk }}
+                        </a>
+                        <div class="small text-muted">
+                          <i class="bi bi-person me-1"></i>{{ inv.client.name }}
+                        </div>
+                        <div class="d-flex gap-3 small text-muted mt-1">
+                          <span><i class="bi bi-calendar3 me-1"></i>{{ inv.date }}</span>
+                          <span><i class="bi bi-tag me-1"></i>{{ inv.get_invoice_type_display }}</span>
+                        </div>
+                      </div>
+                      <div class="text-end">
+                        <a class="btn btn-outline-primary btn-sm" href="{% url 'invoice_pdf' inv.pk %}" title="Download PDF">
+                          <i class="bi bi-download"></i>
+                        </a>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div class="text-end">
-                  <a class="btn btn-outline-primary btn-sm" href="{% url 'invoice_pdf' inv.pk %}">
-                    <i class="bi bi-download me-1"></i>PDF
-                  </a>
                 </div>
               </div>
             </div>
         {% empty %}
-            <div class="text-center py-4">
-              <i class="bi bi-file-earmark-plus" style="font-size: 2rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
-              <h6 class="text-muted">No invoices yet</h6>
-              <p class="text-muted small">Create your first invoice</p>
+            <div class="text-center py-5">
+              <div class="mb-4">
+                <div class="d-inline-flex align-items-center justify-content-center" 
+                     style="width: 80px; height: 80px; background: var(--bg-glass); border-radius: 50%; border: 2px dashed var(--border-color);">
+                  <i class="bi bi-file-earmark-plus" style="font-size: 2rem; color: var(--text-muted);"></i>
+                </div>
+              </div>
+              <h6 class="text-muted mb-2">No invoices yet</h6>
+              <p class="text-muted small mb-3">Start creating professional invoices</p>
               {% if clients %}
                 <div class="dropdown">
-                  <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                    <i class="bi bi-plus me-1"></i>Create Invoice
+                  <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-plus me-2"></i>Create Your First Invoice
                   </button>
                   <ul class="dropdown-menu">
                     {% for c in clients %}
-                      <li><a class="dropdown-item" href="{% url 'invoice_create' c.pk %}">{{ c.name }}</a></li>
-        {% endfor %}
-      </ul>
+                      <li>
+                        <a class="dropdown-item d-flex align-items-center" href="{% url 'invoice_create' c.pk %}">
+                          <div class="me-2" style="width: 20px; height: 20px; background: var(--primary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: white; font-weight: bold;">
+                            {{ c.name|first|upper }}
+                          </div>
+                          {{ c.name }}
+                        </a>
+                      </li>
+          {% endfor %}
+        </ul>
                 </div>
               {% else %}
-                <p class="text-muted small mt-2">Add a client first</p>
+                <p class="text-muted small mt-3">Add a client first to create invoices</p>
               {% endif %}
             </div>
           {% endfor %}
@@ -236,48 +333,114 @@
     </div>
   </div>
 
-<!-- Quick Actions Section -->
-<div class="row mt-4">
-  <div class="col-12">
-    <div class="card">
-      <div class="card-body p-3">
-        <h6 class="fw-bold mb-3">
-          <i class="bi bi-lightning me-2" style="color: var(--primary-color);"></i>Quick Actions
-        </h6>
-        <div class="row g-2">
-          <div class="col-md-4">
-            <a href="{% url 'clients_create' %}" class="btn btn-outline-primary w-100 py-2">
-              <i class="bi bi-person-plus me-2"></i>Add Client
-            </a>
-          </div>
-          <div class="col-md-4">
-            <a href="{% url 'clients_list' %}" class="btn btn-outline-primary w-100 py-2">
-              <i class="bi bi-people me-2"></i>View Clients
-            </a>
-          </div>
-          <div class="col-md-4">
-            {% if clients %}
-              <div class="dropdown w-100">
-                <button class="btn btn-outline-primary w-100 py-2 dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                  <i class="bi bi-file-earmark-plus me-2"></i>New Invoice
-                </button>
-                <ul class="dropdown-menu w-100">
-                  {% for c in clients %}
-                    <li><a class="dropdown-item" href="{% url 'invoice_create' c.pk %}">{{ c.name }}</a></li>
+
+<!-- Search Functionality -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('clientSearch');
+    const searchResults = document.getElementById('searchResults');
+    
+    // Client data for search
+    const clients = [
+        {% for client in clients %}
+        {
+            id: {{ client.pk }},
+            name: "{{ client.name|escapejs }}",
+            email: "{{ client.email|default:''|escapejs }}",
+            createInvoiceUrl: "{% url 'invoice_create' client.pk %}",
+            detailUrl: "{% url 'clients_detail' client.pk %}"
+        },
         {% endfor %}
-      </ul>
-              </div>
-            {% else %}
-              <button class="btn btn-outline-secondary w-100 py-2" disabled>
-                <i class="bi bi-file-earmark-plus me-2"></i>New Invoice
-              </button>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+    ];
+    
+    let searchTimeout;
+    
+    searchInput.addEventListener('input', function() {
+        const query = this.value.trim().toLowerCase();
+        
+        // Clear previous timeout
+        clearTimeout(searchTimeout);
+        
+        // Debounce search
+        searchTimeout = setTimeout(() => {
+            if (query.length === 0) {
+                searchResults.style.display = 'none';
+                return;
+            }
+            
+            // Filter clients
+            const filteredClients = clients.filter(client => 
+                client.name.toLowerCase().includes(query) || 
+                client.email.toLowerCase().includes(query)
+            );
+            
+            // Display results
+            displaySearchResults(filteredClients, query);
+        }, 300);
+    });
+    
+    function displaySearchResults(results, query) {
+        if (results.length === 0) {
+            searchResults.innerHTML = `
+                <div class="no-results">
+                    <i class="bi bi-search" style="font-size: 2rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+                    <p>No clients found for "${query}"</p>
+                    <a href="{% url 'clients_create' %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-person-plus me-1"></i>Add New Client
+                    </a>
+                </div>
+            `;
+        } else {
+            searchResults.innerHTML = results.map(client => `
+                <div class="search-result-item" data-client-id="${client.id}">
+                    <div class="d-flex align-items-center flex-grow-1">
+                        <div class="me-3">
+                            <div class="d-inline-flex align-items-center justify-content-center" 
+                                 style="width: 45px; height: 45px; background: var(--primary-gradient); border-radius: 50%; box-shadow: var(--glow-primary);">
+                                <span style="color: white; font-weight: 700; font-size: 1rem;">${client.name.charAt(0).toUpperCase()}</span>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold mb-1" style="color: var(--text-primary); font-size: 1.1rem;">${client.name}</div>
+                            <div class="text-muted" style="font-size: 0.9rem;">
+                                <i class="bi bi-envelope me-1"></i>${client.email || 'No email provided'}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="${client.detailUrl}" class="btn btn-outline-primary btn-sm" title="View Client Details">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="${client.createInvoiceUrl}" class="btn btn-primary btn-sm" title="Create Invoice">
+                            <i class="bi bi-file-plus me-1"></i>Invoice
+                        </a>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        searchResults.style.display = 'block';
+    }
+    
+    // Close search results when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+            searchResults.style.display = 'none';
+        }
+    });
+    
+    // Handle search result clicks
+    searchResults.addEventListener('click', function(e) {
+        const resultItem = e.target.closest('.search-result-item');
+        if (resultItem && e.target.tagName !== 'A') {
+            const createInvoiceLink = resultItem.querySelector('a[title="Create Invoice"]');
+            if (createInvoiceLink) {
+                window.location.href = createInvoiceLink.href;
+            }
+        }
+    });
+});
+</script>
 {% endblock %}
 
 
