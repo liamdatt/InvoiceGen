@@ -179,3 +179,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Google integration
 GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID', default=None)
 GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET', default=None)
+
+# Twilio / WhatsApp integration
+TWILIO_ACCOUNT_SID = env('TWILIO_ACCOUNT_SID', default=None)
+TWILIO_AUTH_TOKEN = env('TWILIO_AUTH_TOKEN', default=None)
+TWILIO_WHATSAPP_FROM = env('TWILIO_WHATSAPP_FROM', default=None)

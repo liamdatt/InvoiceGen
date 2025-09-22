@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block content %}
+<div class="row mb-4">
+  <div class="col-12 d-flex align-items-center justify-content-between">
+    <h1 class="display-6 mb-0"><i class="bi bi-whatsapp me-2 text-success"></i>WhatsApp Manager</h1>
+    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back to Dashboard</a>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center">
+        <i class="bi bi-gear me-2 text-success"></i>
+        <span class="fw-semibold">Global Settings</span>
+      </div>
+      <div class="card-body">
+        <form method="post" action="" class="vstack gap-3">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="settings">
+          <div>
+            <label class="form-label">Business Name</label>
+            {{ settings_form.business_name }}
+            {% if settings_form.business_name.errors %}
+              <div class="text-danger small">{{ settings_form.business_name.errors|join:', ' }}</div>
+            {% endif %}
+          </div>
+          <div>
+            <label class="form-label">Default Follow-up Interval (days)</label>
+            {{ settings_form.global_follow_up_days }}
+            {% if settings_form.global_follow_up_days.errors %}
+              <div class="text-danger small">{{ settings_form.global_follow_up_days.errors|join:', ' }}</div>
+            {% endif %}
+          </div>
+          <div>
+            <label class="form-label">Message Template</label>
+            <div class="form-text mb-1">Available placeholders: <code>{client_name}</code>, <code>{business_name}</code>, <code>{last_service_date}</code>, <code>{days_since_service}</code>, <code>{next_follow_up_date}</code>, <code>{follow_up_days}</code></div>
+            {{ settings_form.message_template }}
+            {% if settings_form.message_template.errors %}
+              <div class="text-danger small">{{ settings_form.message_template.errors|join:', ' }}</div>
+            {% endif %}
+          </div>
+          <button type="submit" class="btn btn-success align-self-start">Save Settings</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center">
+        <i class="bi bi-person-plus-fill me-2 text-success"></i>
+        <span class="fw-semibold">Enroll Client</span>
+      </div>
+      <div class="card-body">
+        <form method="post" action="" class="row g-3">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="enroll">
+          <div class="col-md-6">
+            <label class="form-label">Client</label>
+            {{ enrollment_form.client }}
+            {% if enrollment_form.client.errors %}
+              <div class="text-danger small">{{ enrollment_form.client.errors|join:', ' }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Last Service Date</label>
+            {{ enrollment_form.last_service_date }}
+            {% if enrollment_form.last_service_date.errors %}
+              <div class="text-danger small">{{ enrollment_form.last_service_date.errors|join:', ' }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Override Days</label>
+            {{ enrollment_form.follow_up_days_override }}
+            {% if enrollment_form.follow_up_days_override.errors %}
+              <div class="text-danger small">{{ enrollment_form.follow_up_days_override.errors|join:', ' }}</div>
+            {% endif %}
+          </div>
+          <div class="col-12 d-flex justify-content-end">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i>Add to Follow-ups</button>
+          </div>
+        </form>
+        {% if eligible_clients|length == 0 %}
+          <p class="text-muted mt-3">All clients are currently enrolled.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <div>
+      <i class="bi bi-people-fill me-2 text-success"></i>
+      <span class="fw-semibold">Scheduled Clients</span>
+    </div>
+    <span class="text-muted small">Default interval: {{ settings.global_follow_up_days }} days</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Client</th>
+          <th>Last Service</th>
+          <th>Next Follow-up</th>
+          <th>Interval</th>
+          <th>Status</th>
+          <th>Last Message</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in followup_entries %}
+          {% with followup=entry.followup form=entry.form %}
+          <tr>
+            <td>
+              <div class="fw-semibold">{{ followup.client.name }}</div>
+              <div class="small text-muted">{{ followup.client.phone|default:'No phone' }}</div>
+              {% if followup.last_error %}
+                <div class="text-danger small"><i class="bi bi-exclamation-circle me-1"></i>{{ followup.last_error }}</div>
+              {% endif %}
+            </td>
+            <td>{{ followup.last_service_date|date:'M j, Y'|default:'—' }}</td>
+            <td>
+              {% if followup.next_follow_up_date %}
+                {{ followup.next_follow_up_date|date:'M j, Y' }}
+                {% if followup.next_follow_up_date <= today %}
+                  <span class="badge bg-danger ms-2">Due</span>
+                {% endif %}
+              {% else %}
+                <span class="text-muted">Not scheduled</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if followup.follow_up_days_override %}
+                {{ followup.follow_up_days_override }} days
+              {% else %}
+                <span class="text-muted">Default ({{ settings.global_follow_up_days }} days)</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if followup.is_active %}
+                <span class="badge bg-success">Active</span>
+              {% else %}
+                <span class="badge bg-secondary">Paused</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if followup.last_sent_at %}
+                {{ followup.last_sent_at|naturaltime }}
+              {% else %}
+                <span class="text-muted">Never</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <form method="post" action="{% url 'whatsapp_followup_update' followup.pk %}" class="row gx-2 gy-1 align-items-center">
+                {% csrf_token %}
+                <div class="col-md-4">
+                  {{ form.last_service_date }}
+                </div>
+                <div class="col-md-3">
+                  {{ form.follow_up_days_override }}
+                </div>
+                <div class="col-md-2 form-check d-flex align-items-center">
+                  {{ form.is_active }}
+                  <label class="form-check-label ms-1">Active</label>
+                </div>
+                <div class="col-md-3 text-end">
+                  <button class="btn btn-outline-primary btn-sm" type="submit">Update</button>
+                </div>
+              </form>
+              <form method="post" action="{% url 'whatsapp_followup_send_now' followup.pk %}" class="d-inline-block ms-1">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-send me-1"></i>Send now</button>
+              </form>
+            </td>
+          </tr>
+          {% endwith %}
+        {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-4 text-muted">No clients enrolled yet.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <i class="bi bi-clock-history me-2 text-success"></i>
+    <span class="fw-semibold">Recent Activity</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Time</th>
+          <th>Client</th>
+          <th>Status</th>
+          <th>Trigger</th>
+          <th>Excerpt</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in recent_logs %}
+          <tr>
+            <td>{{ log.created_at|naturaltime }}</td>
+            <td>{{ log.follow_up.client.name }}</td>
+            <td>
+              {% if log.status == 'sent' %}
+                <span class="badge bg-success">Sent</span>
+              {% else %}
+                <span class="badge bg-danger">Failed</span>
+              {% endif %}
+            </td>
+            <td class="text-capitalize">{{ log.get_trigger_display }}</td>
+            <td class="text-muted small">{{ log.body|truncatechars:80 }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="text-center py-4 text-muted">No messages sent yet.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
