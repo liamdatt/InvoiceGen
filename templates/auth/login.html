@@ -1,68 +1,73 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="row justify-content-center align-items-center" style="min-height: 70vh;">
-  <div class="col-md-5 col-lg-4">
-    <!-- Logo and Welcome -->
-    <div class="text-center mb-4">
-      <div class="mb-3">
-        <div class="d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px; background: var(--primary-color); border-radius: var(--border-radius); margin-bottom: 1rem;">
-          <i class="bi bi-shield-check" style="font-size: 1.5rem; color: white;"></i>
+<div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+  <div class="col-md-6 col-lg-5 col-xl-4">
+    <!-- Brand Hero -->
+    <div class="text-center mb-5 fade-in">
+      <div class="mb-4">
+        <div class="d-inline-flex align-items-center justify-content-center" 
+             style="width: 100px; height: 100px; background: var(--primary-gradient); border-radius: 50%; box-shadow: var(--glow-primary); margin-bottom: 1.5rem;">
+          <i class="bi bi-shield-check" style="font-size: 2.5rem; color: white;"></i>
         </div>
       </div>
-      <h3 class="fw-bold mb-2">Welcome Back</h3>
-      <p class="text-muted">Sign in to manage your invoices</p>
+      <h1 class="display-title mb-3">Welcome Back</h1>
+      <p class="text-muted lead">Access your professional invoice management suite</p>
     </div>
 
     <!-- Login Card -->
-    <div class="card">
-      <div class="card-body p-4">
+    <div class="card fade-in glass" style="animation-delay: 0.2s; border: none;">
+      <div class="card-body p-5">
         <form method="post">
           {% csrf_token %}
           
           {% if form.non_field_errors %}
-            <div class="alert alert-danger">
-              <i class="bi bi-exclamation-circle me-2"></i>
+            <div class="alert">
+              <i class="bi bi-exclamation-triangle me-2" style="color: var(--accent-color);"></i>
               {{ form.non_field_errors }}
             </div>
           {% endif %}
           
-          <div class="mb-3">
-            <label class="form-label fw-semibold">
-              <i class="bi bi-person me-2"></i>Username
+          <div class="mb-4">
+            <label class="form-label">
+              <i class="bi bi-person me-2" style="color: var(--accent-color);"></i>Username
             </label>
             {{ form.username }}
             {% if form.username.errors %}
-              <div class="text-danger small mt-1">
+              <div class="text-danger small mt-2">
                 <i class="bi bi-exclamation-circle me-1"></i>{{ form.username.errors.0 }}
               </div>
             {% endif %}
           </div>
           
-          <div class="mb-3">
-            <label class="form-label fw-semibold">
-              <i class="bi bi-lock me-2"></i>Password
+          <div class="mb-4">
+            <label class="form-label">
+              <i class="bi bi-lock me-2" style="color: var(--accent-color);"></i>Password
             </label>
             {{ form.password }}
             {% if form.password.errors %}
-              <div class="text-danger small mt-1">
+              <div class="text-danger small mt-2">
                 <i class="bi bi-exclamation-circle me-1"></i>{{ form.password.errors.0 }}
               </div>
             {% endif %}
           </div>
           
-          <button class="btn btn-primary w-100 py-2" type="submit">
-            <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+          <button class="btn btn-primary w-100 btn-lg mb-3" type="submit">
+            <i class="bi bi-box-arrow-in-right me-2"></i>Access Dashboard
           </button>
         </form>
+        
+        <!-- Divider -->
+        <div class="text-center">
+          <div style="border-top: 1px solid var(--border-color); margin: 2rem 0; position: relative;">
+            <span style="background: var(--bg-card); padding: 0 1rem; position: absolute; top: -0.7rem; left: 50%; transform: translateX(-50%); color: var(--text-muted); font-size: 0.85rem;">
+              New to InvoiceGen?
+            </span>
+          </div>
+          <a href="{% url 'signup' %}" class="btn btn-outline-primary">
+            <i class="bi bi-person-plus me-2"></i>Create Account
+          </a>
+        </div>
       </div>
-    </div>
-    
-    <!-- Sign Up Link -->
-    <div class="text-center mt-3">
-      <p class="text-muted small">
-        Don't have an account? 
-        <a href="{% url 'signup' %}" class="fw-semibold">Create one here</a>
-      </p>
     </div>
   </div>
 </div>

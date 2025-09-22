@@ -2,102 +2,141 @@
 {% load humanize %}
 <div class="invoice-screen{% if for_pdf %} invoice-screen--pdf{% endif %}">
   <div class="invoice-paper{% if for_pdf %} invoice-paper--pdf{% endif %}">
+    <!-- Modern Invoice Header -->
     <div class="invoice-header">
-      <div class="brand-block">
-        {% if for_pdf and logo_src %}
-          <img src="{{ logo_src }}" alt="Stepmath Auto Limited" class="brand-logo">
-        {% elif not for_pdf %}
-          {% static 'invoicegen/logo.jpeg' as logo_url %}
-          <img src="{{ logo_url }}" alt="Stepmath Auto Limited" class="brand-logo">
-        {% endif %}
-        <div class="brand-text">
-          <div class="brand-name">STEPMATH AUTO LIMITED</div>
-          <div class="brand-meta">(Certified Car Dealer)</div>
-          <div>94b Old Hope Road</div>
-          <div>Kingston 6</div>
-          <div>Tel: (876) 927-8281 / 978-0297</div>
-          <div>Email: stepmathauto100@gmail.com</div>
+      <div class="row align-items-center">
+        <div class="col-lg-8">
+          <div class="d-flex align-items-center">
+            <div class="company-logo me-4">
+              {% if for_pdf and logo_src %}
+                <img src="{{ logo_src }}" alt="Stepmath Auto Limited" class="brand-logo">
+              {% elif not for_pdf %}
+                {% static 'invoicegen/logo.jpeg' as logo_url %}
+                <img src="{{ logo_url }}" alt="Stepmath Auto Limited" class="brand-logo">
+              {% endif %}
+            </div>
+            <div class="company-info">
+              <h1 class="company-name">STEPMATH AUTO LIMITED</h1>
+              <div class="company-subtitle">(Certified Car Dealer)</div>
+              <div class="company-address">
+                <div>94b Old Hope Road, Kingston 6</div>
+                <div>Tel: (876) 927-8281 / 978-0297</div>
+                <div>Email: stepmathauto100@gmail.com</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4 text-end">
+          <div class="invoice-badge">
+            <div class="invoice-type">ESTIMATE FOR REPAIRS</div>
+            <div class="invoice-number">#{{ invoice.pk }}</div>
+          </div>
         </div>
       </div>
-      <div class="estimate-title">ESTIMATE FOR REPAIRS</div>
     </div>
 
-    <div class="invoice-meta">
-      <div class="meta-col">
-        <div><span class="meta-label">Client:</span> {{ invoice.client.name }}</div>
-        <div><span class="meta-label">Vehicle:</span> {{ invoice.vehicle|default:"" }}</div>
-        <div><span class="meta-label">Lic#:</span> {{ invoice.lic_no|default:"" }}</div>
-        <div><span class="meta-label">Chassis#:</span> {{ invoice.chassis_no|default:"" }}</div>
-      </div>
-      <div class="meta-col align-end">
-        <div><span class="meta-label">Date:</span> {{ invoice.date|date:"j-M-y" }}</div>
+    <!-- Client & Vehicle Information -->
+    <div class="client-info-section">
+      <div class="row">
+        <div class="col-lg-8">
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Client</span>
+              <span class="info-value">{{ invoice.client.name }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Vehicle</span>
+              <span class="info-value">{{ invoice.vehicle|default:"Not specified" }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">License #</span>
+              <span class="info-value">{{ invoice.lic_no|default:"Not specified" }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Chassis #</span>
+              <span class="info-value">{{ invoice.chassis_no|default:"Not specified" }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="date-info">
+            <span class="date-label">Date</span>
+            <span class="date-value">{{ invoice.date|date:"F j, Y" }}</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="divider"></div>
-
-    <table class="items-table">
-      <thead>
-        <tr>
-          <th class="description">Description</th>
-          <th class="labour">Labour Cost</th>
-          <th class="parts">Parts Cost</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% if invoice.items.all %}
-          {% for it in invoice.items.all %}
+    <!-- Services & Items Table -->
+    <div class="services-section">
+      <h3 class="section-title">Services & Parts</h3>
+      <div class="table-responsive">
+        <table class="services-table">
+          <thead>
             <tr>
-              <td class="description">{{ it.description }}</td>
-              <td class="labour">${{ it.labour_cost|floatformat:2|intcomma }}</td>
-              <td class="parts">${{ it.parts_cost|floatformat:2|intcomma }}</td>
+              <th class="description-col">Description</th>
+              <th class="labour-col">Labour Cost</th>
+              <th class="parts-col">Parts Cost</th>
             </tr>
-          {% endfor %}
-        {% else %}
-          <tr>
-            <td class="description" colspan="3">No invoice items have been added yet.</td>
-          </tr>
-        {% endif %}
-      </tbody>
-    </table>
-
-    <div class="totals">
-      <div class="totals-row">
-        <span>Cost</span>
-        <span class="amount">${{ invoice.labour_subtotal|floatformat:2|intcomma }}</span>
-        <span class="amount">${{ invoice.parts_subtotal|floatformat:2|intcomma }}</span>
-      </div>
-      <div class="totals-row">
-        <span>Plus 15% GCT</span>
-        <span></span>
-        <span class="amount">${{ invoice.gct|floatformat:2|intcomma }}</span>
-      </div>
-      <div class="totals-row grand-total">
-        <span>Total Cost</span>
-        <span></span>
-        <span class="amount">${{ invoice.total|floatformat:2|intcomma }}</span>
+          </thead>
+          <tbody>
+            {% if invoice.items.all %}
+              {% for it in invoice.items.all %}
+                <tr>
+                  <td class="description-cell">{{ it.description }}</td>
+                  <td class="labour-cell">${{ it.labour_cost|floatformat:2|intcomma }}</td>
+                  <td class="parts-cell">${{ it.parts_cost|floatformat:2|intcomma }}</td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td class="empty-cell" colspan="3">
+                  <div class="empty-state">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span>No services or parts have been added to this estimate</span>
+                  </div>
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <div class="signature-block">
-      <div class="signature-line"></div>
-      <div class="signature-name">STEPHEN DUHANEY</div>
-      <div class="signature-title">DIRECTOR</div>
+    <!-- Totals Section -->
+    <div class="totals-section">
+      <div class="totals-grid">
+        <div class="subtotal-row">
+          <span class="total-label">Labour Subtotal</span>
+          <span class="total-amount">${{ invoice.labour_subtotal|floatformat:2|intcomma }}</span>
+        </div>
+        <div class="subtotal-row">
+          <span class="total-label">Parts Subtotal</span>
+          <span class="total-amount">${{ invoice.parts_subtotal|floatformat:2|intcomma }}</span>
+        </div>
+        <div class="tax-row">
+          <span class="total-label">Plus 15% GCT</span>
+          <span class="total-amount">${{ invoice.gct|floatformat:2|intcomma }}</span>
+        </div>
+        <div class="grand-total-row">
+          <span class="total-label">Total Cost</span>
+          <span class="total-amount">${{ invoice.total|floatformat:2|intcomma }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Signature Section -->
+    <div class="signature-section">
+      <div class="signature-area">
+        <div class="signature-line"></div>
+        <div class="signature-details">
+          <div class="signature-name">STEPHEN DUHANEY</div>
+          <div class="signature-title">DIRECTOR</div>
+        </div>
+      </div>
     </div>
   </div>
 
-  {% if not for_pdf %}
-    <div class="actions">
-      <a href="{% url 'invoice_update' invoice.pk %}" class="btn btn-outline-secondary btn-sm">Edit Invoice</a>
-      <a href="{% url 'invoice_pdf' invoice.pk %}" class="btn btn-primary btn-sm">Download PDF</a>
-      <a href="{% url 'clients_detail' invoice.client.pk %}" class="btn btn-outline-secondary btn-sm">View Client</a>
-      <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm">Back to Dashboard</a>
-      <form action="{% url 'invoice_delete' invoice.pk %}" method="post" onsubmit="return confirm('Delete this invoice? This action cannot be undone.');}">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-danger btn-sm">Delete Invoice</button>
-      </form>
-    </div>
-  {% endif %}
 </div>
 
 <style>
@@ -304,16 +343,392 @@
     letter-spacing: 0.1rem;
   }
 
-  .actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    align-items: center;
-    justify-content: center;
-    padding-bottom: 1rem;
+  /* Modern Enhancements */
+  .company-logo .brand-logo {
+    width: 80px;
+    height: 80px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    object-fit: cover;
   }
 
-  .actions form {
-    display: inline;
+  .company-info .company-name {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #dc2626;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.025em;
+  }
+
+  .company-subtitle {
+    font-size: 1rem;
+    color: #64748b;
+    font-weight: 500;
+    margin-bottom: 1rem;
+  }
+
+  .company-address {
+    font-size: 0.9rem;
+    color: #475569;
+    line-height: 1.6;
+  }
+
+  .invoice-badge {
+    text-align: center;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #dc2626, #fbbf24);
+    border-radius: 12px;
+    color: white;
+    box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
+  }
+
+  .invoice-type {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.5rem;
+    opacity: 0.9;
+  }
+
+  .invoice-number {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+  }
+
+  .client-info-section {
+    margin-bottom: 3rem;
+    padding: 2rem;
+    background: #f8fafc;
+    border-radius: 12px;
+    border-left: 4px solid #fbbf24;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .info-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .info-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e293b;
+  }
+
+  .date-info {
+    text-align: right;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 12px;
+    border: 2px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .date-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+  }
+
+  .date-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #dc2626;
+  }
+
+  .services-section {
+    margin-bottom: 3rem;
+  }
+
+  .section-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  .services-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  .services-table thead tr {
+    background: linear-gradient(135deg, #1e293b, #475569);
+    color: white;
+  }
+
+  .services-table th {
+    padding: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    border: none;
+  }
+
+  .description-col {
+    width: 50%;
+    text-align: left;
+  }
+
+  .labour-col,
+  .parts-col {
+    width: 25%;
+    text-align: right;
+  }
+
+  .services-table tbody tr {
+    border-bottom: 1px solid #e2e8f0;
+    transition: background-color 0.2s ease;
+  }
+
+  .services-table tbody tr:hover {
+    background: #f8fafc;
+  }
+
+  .services-table td {
+    padding: 1rem;
+    border: none;
+    font-size: 0.95rem;
+  }
+
+  .description-cell {
+    font-weight: 500;
+    color: #1e293b;
+  }
+
+  .labour-cell,
+  .parts-cell {
+    text-align: right;
+    font-weight: 600;
+    color: #059669;
+  }
+
+  .empty-cell {
+    text-align: center;
+    padding: 3rem 1rem;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    color: #64748b;
+  }
+
+  .empty-state i {
+    font-size: 2rem;
+    opacity: 0.5;
+  }
+
+  .totals-section {
+    margin-bottom: 3rem;
+  }
+
+  .totals-grid {
+    max-width: 400px;
+    margin-left: auto;
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 2rem;
+    border: 2px solid #e2e8f0;
+  }
+
+  .subtotal-row,
+  .tax-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .grand-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    margin-top: 1rem;
+    border-top: 2px solid #dc2626;
+    font-size: 1.1rem;
+  }
+
+  .total-label {
+    font-weight: 600;
+    color: #475569;
+  }
+
+  .grand-total-row .total-label {
+    font-weight: 700;
+    color: #1e293b;
+  }
+
+  .total-amount {
+    font-weight: 700;
+    color: #059669;
+  }
+
+  .grand-total-row .total-amount {
+    font-size: 1.25rem;
+    color: #dc2626;
+  }
+
+  .signature-section {
+    margin-top: 4rem;
+    text-align: center;
+  }
+
+  .signature-area {
+    max-width: 300px;
+    margin: 0 auto;
+  }
+
+  .signature-line {
+    width: 100%;
+    height: 2px;
+    background: #1e293b;
+    margin-bottom: 1rem;
+  }
+
+  .signature-details {
+    text-align: center;
+  }
+
+  .signature-name {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #1e293b;
+    margin-bottom: 0.25rem;
+    letter-spacing: 0.5px;
+  }
+
+  .signature-title {
+    font-size: 0.85rem;
+    color: #64748b;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Override old styles */
+  .invoice-paper {
+    background: #ffffff;
+    color: #1a1a1a;
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 3rem;
+    border: none;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--card-shadow-hover);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .invoice-paper::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #dc2626, #fbbf24);
+  }
+
+  .invoice-paper--pdf::before {
+    display: none;
+  }
+
+  .invoice-header {
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 2px solid #f1f5f9;
+  }
+
+  @media (max-width: 768px) {
+    .invoice-paper {
+      padding: 2rem 1.5rem;
+      margin: 0 1rem;
+    }
+
+    .invoice-header .row,
+    .client-info-section .row {
+      flex-direction: column;
+    }
+
+    .invoice-badge,
+    .date-info {
+      text-align: center;
+      margin-top: 1.5rem;
+    }
+
+    .info-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .services-table {
+      font-size: 0.85rem;
+    }
+
+    .services-table th,
+    .services-table td {
+      padding: 0.75rem 0.5rem;
+    }
+
+    .totals-grid {
+      margin: 0;
+    }
+
+    .company-info .company-name {
+      font-size: 1.5rem;
+    }
+  }
+
+  @media print {
+    .invoice-screen {
+      padding: 0;
+    }
+
+    .invoice-paper {
+      box-shadow: none;
+      border: 1px solid #ddd;
+      margin: 0;
+      max-width: none;
+      width: 100%;
+      border-radius: 0;
+    }
+
+    .invoice-paper::before {
+      display: none;
+    }
   }
 </style>
