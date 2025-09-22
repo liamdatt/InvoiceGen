@@ -1,148 +1,39 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<!-- Invoice Header & Actions -->
-<div class="row mb-5">
-  <div class="col-12">
-    <div class="card fade-in glass" style="border: none;">
-      <div class="card-body p-4">
-        <!-- Invoice Title & Meta -->
-        <div class="row align-items-center mb-4">
-          <div class="col-lg-8">
-            <div class="d-flex align-items-center mb-2">
-              <div class="me-3">
-                <div class="d-inline-flex align-items-center justify-content-center" 
-                     style="width: 60px; height: 60px; background: var(--primary-gradient); border-radius: var(--border-radius-lg); box-shadow: var(--glow-primary);">
-                  <i class="bi bi-file-earmark-text" style="color: white; font-size: 1.5rem;"></i>
-                </div>
-              </div>
-              <div>
-                <h1 class="display-title mb-1">Invoice #{{ invoice.pk }}</h1>
-                <div class="d-flex align-items-center gap-3 text-muted">
-                  <span><i class="bi bi-person me-1"></i>{{ invoice.client.name }}</span>
-                  <span><i class="bi bi-calendar3 me-1"></i>{{ invoice.date|date:"F j, Y" }}</span>
-                  <span class="badge" style="background: var(--accent-gradient); color: white; padding: 0.5rem 1rem;">
-                    {{ invoice.get_invoice_type_display }}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-lg-4 text-lg-end">
-            <div class="d-flex flex-column gap-2">
-              <div class="fw-bold" style="color: var(--text-accent); font-size: 1.1rem;">Total Amount</div>
-              <div class="display-6 fw-bold" style="color: var(--primary-color);">${{ invoice.total|floatformat:2 }}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="row align-items-center">
-          <div class="col-lg-8">
-            <div class="d-flex flex-wrap gap-2">
-              <a class="btn btn-primary" href="{% url 'invoice_pdf' invoice.pk %}">
-                <i class="bi bi-download me-2"></i>Download PDF
-              </a>
-              {% if invoice.drive_web_view_link %}
-                <a class="btn btn-outline-primary" href="{{ invoice.drive_web_view_link }}" target="_blank" rel="noopener">
-                  <i class="bi bi-cloud-arrow-up me-2"></i>View on Drive
-                </a>
-              {% endif %}
-              <a class="btn btn-outline-primary" href="{% url 'invoice_update' invoice.pk %}">
-                <i class="bi bi-pencil me-2"></i>Edit Invoice
-              </a>
-              <a class="btn btn-outline-secondary" href="{% url 'clients_detail' invoice.client.pk %}">
-                <i class="bi bi-person me-2"></i>View Client
-              </a>
-            </div>
-          </div>
-          <div class="col-lg-4 mt-3 mt-lg-0 text-lg-end">
-            {% if can_email %}
-              <form method="post" action="{% url 'invoice_send_email' invoice.pk %}" class="d-inline">
-                {% csrf_token %}
-                <button class="btn btn-success btn-lg" type="submit">
-                  <i class="bi bi-envelope-paper me-2"></i>Email to {{ invoice.client.email }}
-                </button>
-              </form>
-            {% elif google_enabled %}
-              <a class="btn btn-outline-primary btn-lg" href="{% url 'google_connect' %}">
-                <i class="bi bi-google me-2"></i>Connect Google
-              </a>
-            {% else %}
-              <div class="text-muted small">
-                <i class="bi bi-info-circle me-1"></i>
-                Configure Google credentials to enable email delivery
-              </div>
-            {% endif %}
-          </div>
-        </div>
-      </div>
+  <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center mb-4 gap-3">
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-primary" href="{% url 'invoice_pdf' invoice.pk %}">
+        <i class="bi bi-download me-1"></i>Download PDF
+      </a>
+      {% if invoice.drive_web_view_link %}
+        <a class="btn btn-outline-secondary" href="{{ invoice.drive_web_view_link }}" target="_blank" rel="noopener">
+          <i class="bi bi-cloud-arrow-up me-1"></i>View on Google Drive
+        </a>
+      {% endif %}
+    </div>
+    <div>
+      {% if can_email %}
+        <form method="post" action="{% url 'invoice_send_email' invoice.pk %}" class="d-inline">
+          {% csrf_token %}
+          <button class="btn btn-success" type="submit">
+            <i class="bi bi-envelope-paper me-1"></i>Email to {{ invoice.client.email }}
+          </button>
+        </form>
+      {% elif google_enabled %}
+        <a class="btn btn-outline-primary" href="{% url 'google_connect' %}">
+          <i class="bi bi-google me-1"></i>Connect Google to email invoices
+        </a>
+      {% else %}
+        <span class="text-muted">Configure Google credentials to email invoices automatically.</span>
+      {% endif %}
     </div>
   </div>
-</div>
-
-<!-- Drive Status Alert -->
-{% if invoice.drive_web_view_link %}
-<div class="row mb-4">
-  <div class="col-12">
-    <div class="alert fade-in" style="animation-delay: 0.2s;">
-      <div class="d-flex align-items-center">
-        <i class="bi bi-check-circle-fill me-3" style="color: var(--accent-color); font-size: 1.2rem;"></i>
-        <div>
-          <div class="fw-bold mb-1">Backed up to Google Drive</div>
-          <div class="small">
-            Latest copy automatically stored. 
-            <a href="{{ invoice.drive_web_view_link }}" class="fw-bold" target="_blank" rel="noopener" style="color: var(--accent-color);">
-              Open Drive folder <i class="bi bi-arrow-up-right"></i>
-            </a>
-          </div>
-        </div>
-      </div>
+  {% if invoice.drive_web_view_link %}
+    <div class="alert alert-info d-flex align-items-center gap-2">
+      <i class="bi bi-check-circle-fill"></i>
+      <span>Latest copy stored in Google Drive. <a href="{{ invoice.drive_web_view_link }}" class="alert-link" target="_blank" rel="noopener">Open folder</a>.</span>
     </div>
-  </div>
-</div>
-{% endif %}
-
-<!-- Invoice Document -->
-<div class="row">
-  <div class="col-12">
-    {% include 'invoices/_detail_document.html' %}
-  </div>
-</div>
-
-<!-- Danger Zone -->
-<div class="row mt-5">
-  <div class="col-12">
-    <div class="card fade-in" style="animation-delay: 0.4s; border: 2px solid var(--danger-color); background: rgba(239, 68, 68, 0.05);">
-      <div class="card-body p-4">
-        <div class="d-flex align-items-center justify-content-between">
-          <div class="d-flex align-items-center">
-            <i class="bi bi-exclamation-triangle me-3" style="color: var(--danger-color); font-size: 1.5rem;"></i>
-            <div>
-              <h6 class="mb-1" style="color: var(--danger-color);">Danger Zone</h6>
-              <p class="mb-0 text-muted small">Permanently delete this invoice. This action cannot be undone.</p>
-            </div>
-          </div>
-          <form action="{% url 'invoice_delete' invoice.pk %}" method="post" class="d-inline">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-outline-danger" 
-                    onclick="return confirm('⚠️ Delete Invoice #{{ invoice.pk }}?\n\nThis action cannot be undone. The invoice will be permanently removed from your system.\n\nClick OK to confirm deletion.');">
-              <i class="bi bi-trash me-2"></i>Delete Invoice
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Navigation -->
-<div class="row mt-4">
-  <div class="col-12 text-center">
-    <a href="{% url 'dashboard' %}" class="btn btn-outline-primary">
-      <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
-    </a>
-  </div>
-</div>
-
+  {% endif %}
+  {% include 'invoices/_detail_document.html' %}
 {% endblock %}
