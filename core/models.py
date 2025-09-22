@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+from datetime import date, timedelta
+from decimal import Decimal, ROUND_HALF_UP
+from pathlib import Path
+
 from django.contrib.staticfiles import finders
 from django.core.files.base import ContentFile
 from django.db import models
 from django.template.loader import render_to_string
 from django.utils import timezone
-from decimal import Decimal, ROUND_HALF_UP
-from pathlib import Path
 
 from django.contrib.auth import get_user_model
 User = get_user_model()
@@ -309,3 +311,131 @@ class GoogleAccount(models.Model):
         if not self.drive_folder_id:
             return ""
         return self.drive_folder_name or self.drive_folder_id
+
+
+class WhatsAppSettings(models.Model):
+    DEFAULT_TEMPLATE = (
+        "Hi {client_name}, just checking in from {business_name}! It's been {days_since_service} days since we last "
+        "serviced you on {last_service_date}. Let us know if you need anything."
+    )
+
+    singleton_id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+    global_follow_up_days = models.PositiveIntegerField(default=90)
+    message_template = models.TextField(default=DEFAULT_TEMPLATE)
+    business_name = models.CharField(max_length=255, blank=True, default="")
+
+    class Meta:
+        verbose_name = "WhatsApp settings"
+
+    def __str__(self) -> str:
+        return "WhatsApp Settings"
+
+    @classmethod
+    def load(cls) -> "WhatsAppSettings":
+        obj, _ = cls.objects.get_or_create(
+            singleton_id=1,
+            defaults={
+                "global_follow_up_days": 90,
+                "message_template": cls.DEFAULT_TEMPLATE,
+            },
+        )
+        return obj
+
+
+class WhatsAppFollowUp(models.Model):
+    client = models.OneToOneField(Client, on_delete=models.CASCADE, related_name="whatsapp_follow_up")
+    is_active = models.BooleanField(default=True)
+    last_service_date = models.DateField(null=True, blank=True)
+    follow_up_days_override = models.PositiveIntegerField(null=True, blank=True)
+    next_follow_up_date = models.DateField(null=True, blank=True)
+    last_sent_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["client__name"]
+
+    def __str__(self) -> str:
+        return f"WhatsApp follow-up for {self.client.name}"
+
+    def follow_up_days(self, settings: WhatsAppSettings | None = None) -> int:
+        if self.follow_up_days_override:
+            return self.follow_up_days_override
+        settings = settings or WhatsAppSettings.load()
+        return settings.global_follow_up_days
+
+    def compute_next_follow_up_date(self, settings: WhatsAppSettings | None = None) -> date | None:
+        if not self.last_service_date:
+            return None
+        interval = self.follow_up_days(settings=settings)
+        return self.last_service_date + timedelta(days=interval)
+
+    def refresh_schedule(self, settings: WhatsAppSettings | None = None, *, commit: bool = True) -> None:
+        settings = settings or WhatsAppSettings.load()
+        self.next_follow_up_date = self.compute_next_follow_up_date(settings)
+        if commit:
+            self.save(update_fields=["next_follow_up_date"])
+
+    def register_success(self, *, settings: WhatsAppSettings | None = None) -> None:
+        self.last_sent_at = timezone.now()
+        self.last_error = ""
+        settings = settings or WhatsAppSettings.load()
+        # Schedule the next follow-up relative to the send date to keep reminders recurring.
+        interval = self.follow_up_days(settings=settings)
+        self.next_follow_up_date = timezone.localdate() + timedelta(days=interval)
+        self.save(update_fields=["last_sent_at", "last_error", "next_follow_up_date"])
+
+    def register_failure(self, error: str) -> None:
+        self.last_error = error
+        self.save(update_fields=["last_error"])
+
+    def message_context(self, settings: WhatsAppSettings | None = None) -> dict:
+        settings = settings or WhatsAppSettings.load()
+        last_service_str = self.last_service_date.strftime("%B %d, %Y") if self.last_service_date else ""
+        days_since_service = ""
+        if self.last_service_date:
+            days_since_service = str((timezone.localdate() - self.last_service_date).days)
+        context = {
+            "client_name": self.client.name,
+            "client_email": self.client.email,
+            "client_phone": self.client.phone,
+            "business_name": settings.business_name or "our team",
+            "last_service_date": last_service_str,
+            "days_since_service": days_since_service,
+            "next_follow_up_date": self.next_follow_up_date.strftime("%B %d, %Y") if self.next_follow_up_date else "",
+            "follow_up_days": str(self.follow_up_days(settings=settings)),
+        }
+        return context
+
+    def build_message(self, settings: WhatsAppSettings | None = None) -> str:
+        settings = settings or WhatsAppSettings.load()
+
+        class _DefaultDict(dict):
+            def __missing__(self, key):  # type: ignore[override]
+                return ""
+
+        template = settings.message_template or WhatsAppSettings.DEFAULT_TEMPLATE
+        return template.format_map(_DefaultDict(self.message_context(settings=settings)))
+
+
+class WhatsAppMessageLog(models.Model):
+    class Status(models.TextChoices):
+        SENT = "sent", "Sent"
+        FAILED = "failed", "Failed"
+
+    class Trigger(models.TextChoices):
+        MANUAL = "manual", "Manual"
+        SCHEDULED = "scheduled", "Scheduled"
+
+    follow_up = models.ForeignKey(WhatsAppFollowUp, on_delete=models.CASCADE, related_name="messages")
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=Status.choices)
+    trigger = models.CharField(max_length=20, choices=Trigger.choices, default=Trigger.SCHEDULED)
+    body = models.TextField()
+    twilio_sid = models.CharField(max_length=255, blank=True)
+    error_message = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"WhatsApp message to {self.follow_up.client.name} ({self.get_status_display()})"
