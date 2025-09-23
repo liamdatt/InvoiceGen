@@ -89,10 +89,23 @@ def send_follow_up_message(
     body = follow_up.build_message(settings=settings_obj)
     to_number = normalise_whatsapp_number(follow_up.client.phone)
     client = _twilio_client()
-    sender = _sender_number()
+
+    # Optional delivery status callback URL
+    status_callback = getattr(settings, "TWILIO_STATUS_CALLBACK_URL", "").strip()
+    messaging_service_sid = getattr(settings, "TWILIO_MESSAGING_SERVICE_SID", "").strip()
+    sender = None
+    if not messaging_service_sid:
+        sender = _sender_number()
 
     try:
-        message = client.messages.create(from_=sender, to=to_number, body=body)
+        kwargs: dict[str, Any] = {"to": to_number, "body": body}
+        if messaging_service_sid:
+            kwargs["messaging_service_sid"] = messaging_service_sid
+        else:
+            kwargs["from_"] = sender  # type: ignore[assignment]
+        if status_callback:
+            kwargs["status_callback"] = status_callback
+        message = client.messages.create(**kwargs)
     except TwilioException as exc:  # pragma: no cover - depends on network
         follow_up.register_failure(str(exc))
         WhatsAppMessageLog.objects.create(
@@ -104,12 +117,15 @@ def send_follow_up_message(
         )
         raise WhatsAppSendError(f"Failed to send WhatsApp message: {exc}") from exc
 
-    follow_up.register_success(settings=settings_obj)
-    WhatsAppMessageLog.objects.create(
+    # We log immediately; status may be updated by webhook later
+    log = WhatsAppMessageLog.objects.create(
         follow_up=follow_up,
-        status=WhatsAppMessageLog.Status.SENT,
+        status=WhatsAppMessageLog.Status.SENT if (message.status or "").lower() in ("sent", "delivered", "read") else WhatsAppMessageLog.Status.SENT,
         trigger=trigger,
         body=body,
         twilio_sid=message.sid,
     )
-    return WhatsAppSendResult(sid=message.sid, status=message.status or "sent")
+    # Defer scheduling next follow-up to webhook when possible; if no webhook configured and Twilio reports sent now, schedule immediately
+    if not status_callback:
+        follow_up.register_success(settings=settings_obj)
+    return WhatsAppSendResult(sid=message.sid, status=message.status or "queued")
