@@ -321,7 +321,6 @@ class WhatsAppSettings(models.Model):
 
     singleton_id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
     global_follow_up_days = models.PositiveIntegerField(default=90)
-    message_template = models.TextField(default=DEFAULT_TEMPLATE)
     business_name = models.CharField(max_length=255, blank=True, default="")
 
     class Meta:
@@ -336,7 +335,6 @@ class WhatsAppSettings(models.Model):
             singleton_id=1,
             defaults={
                 "global_follow_up_days": 90,
-                "message_template": cls.DEFAULT_TEMPLATE,
             },
         )
         return obj
@@ -413,7 +411,7 @@ class WhatsAppFollowUp(models.Model):
             def __missing__(self, key):  # type: ignore[override]
                 return ""
 
-        template = settings.message_template or WhatsAppSettings.DEFAULT_TEMPLATE
+        template = WhatsAppSettings.DEFAULT_TEMPLATE
         return template.format_map(_DefaultDict(self.message_context(settings=settings)))
 
 
