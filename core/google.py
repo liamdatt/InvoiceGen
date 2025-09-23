@@ -165,7 +165,12 @@ def send_invoice_email(
     email["From"] = sender
     email["Subject"] = subject
     email.set_content(message_body)
-    email.add_attachment(io.BytesIO(pdf_content), maintype="application", subtype="pdf", filename=filename)
+    email.add_attachment(
+        pdf_content,
+        maintype="application",
+        subtype="pdf",
+        filename=filename,
+    )
 
     raw_message = base64.urlsafe_b64encode(email.as_bytes()).decode()
     return service.users().messages().send(userId="me", body={"raw": raw_message}).execute()
