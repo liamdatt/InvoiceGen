@@ -158,6 +158,13 @@ _static_candidates = [
 ]
 STATICFILES_DIRS = [p for p in _static_candidates if p.exists()]
 
+
+# Twilio WhatsApp configuration
+TWILIO_ACCOUNT_SID = env('TWILIO_ACCOUNT_SID', default='')
+TWILIO_AUTH_TOKEN = env('TWILIO_AUTH_TOKEN', default='')
+TWILIO_WHATSAPP_FROM = env('TWILIO_WHATSAPP_FROM', default='')
+TWILIO_CONTENT_SID = env('TWILIO_CONTENT_SID', default='')
+
 # WhiteNoise: serve compressed static files efficiently
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 

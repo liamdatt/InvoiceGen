@@ -7,7 +7,7 @@ Please find your invoice (#{% if invoice.pk %}{{ invoice.pk }}{% endif %}) attac
 Total Due: {{ invoice.total }}
 Date: {{ invoice.date }}
 
-{% endif %}If you have any questions, feel free to reply to this email.
+If you have any questions, feel free to reply to this email.
 
 Kind regards,
 {{ sender_name }}
