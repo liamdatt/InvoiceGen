@@ -7,6 +7,7 @@ urlpatterns = [
     path('whatsapp/', views.whatsapp_manager, name='whatsapp_manager'),
     path('whatsapp/<int:pk>/update/', views.whatsapp_followup_update, name='whatsapp_followup_update'),
     path('whatsapp/<int:pk>/send-now/', views.whatsapp_followup_send_now, name='whatsapp_followup_send_now'),
+    path('whatsapp/status/', views.whatsapp_status_callback, name='whatsapp_status_callback'),
 
     path('google/connect/', views.google_connect, name='google_connect'),
     path('google/callback/', views.google_callback, name='google_callback'),

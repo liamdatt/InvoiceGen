@@ -9,6 +9,7 @@ from django.urls import reverse
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
 from .forms import (
     ClientForm,
     INVOICE_GENERAL_FIELDS,
@@ -165,8 +166,53 @@ def whatsapp_followup_send_now(request, pk):
     except WhatsAppSendError as exc:
         messages.error(request, str(exc))
     else:
-        messages.success(request, f"WhatsApp message sent to {follow_up.client.name}.")
+        queued = bool(getattr(settings, 'TWILIO_STATUS_CALLBACK_URL', '').strip())
+        messages.success(
+            request,
+            f"WhatsApp message {'queued' if queued else 'sent'} to {follow_up.client.name}."
+        )
     return redirect('whatsapp_manager')
+
+
+@csrf_exempt
+@require_POST
+def whatsapp_status_callback(request):
+    """Twilio delivery status webhook for WhatsApp messages.
+
+    Expects fields like MessageSid, MessageStatus, ErrorCode, ErrorMessage.
+    Updates the corresponding WhatsAppMessageLog and follow-up schedule.
+    """
+    sid = request.POST.get('MessageSid', '').strip()
+    status = (request.POST.get('MessageStatus', '') or '').strip().lower()
+    error_code = request.POST.get('ErrorCode', '').strip()
+    error_message = request.POST.get('ErrorMessage', '').strip()
+
+    if not sid:
+        return HttpResponse("Missing MessageSid", status=400)
+
+    log = WhatsAppMessageLog.objects.select_related('follow_up', 'follow_up__client').filter(twilio_sid=sid).first()
+    if not log:
+        # Nothing to update; acknowledge to Twilio to avoid retries
+        return HttpResponse("")
+
+    failure_statuses = {"failed", "undelivered"}
+    success_statuses = {"sent", "delivered", "read"}
+
+    if status in failure_statuses:
+        details = f"Twilio status={status} code={error_code} message={error_message}".strip()
+        log.status = WhatsAppMessageLog.Status.FAILED
+        log.error_message = details
+        log.save(update_fields=["status", "error_message"])
+        log.follow_up.register_failure(details)
+    elif status in success_statuses:
+        # Mark as sent (delivered/read treated as sent in our simplified status model)
+        if log.status != WhatsAppMessageLog.Status.SENT:
+            log.status = WhatsAppMessageLog.Status.SENT
+            log.save(update_fields=["status"])
+        # Schedule next follow-up when we have positive confirmation
+        log.follow_up.register_success(settings=WhatsAppSettings.load())
+
+    return HttpResponse("")
 
 
 def signup(request):
