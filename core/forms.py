@@ -28,11 +28,10 @@ class ClientForm(forms.ModelForm):
 class WhatsAppSettingsForm(forms.ModelForm):
     class Meta:
         model = WhatsAppSettings
-        fields = ["business_name", "global_follow_up_days", "message_template"]
+        fields = ["business_name", "global_follow_up_days"]
         widgets = {
             "business_name": forms.TextInput(attrs={"class": "form-control"}),
             "global_follow_up_days": forms.NumberInput(attrs={"class": "form-control", "min": 1}),
-            "message_template": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
         }
 
 

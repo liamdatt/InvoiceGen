@@ -33,14 +33,6 @@
               <div class="text-danger small">{{ settings_form.global_follow_up_days.errors|join:', ' }}</div>
             {% endif %}
           </div>
-          <div>
-            <label class="form-label">Message Template</label>
-            <div class="form-text mb-1">Available placeholders: <code>{client_name}</code>, <code>{business_name}</code>, <code>{last_service_date}</code>, <code>{days_since_service}</code>, <code>{next_follow_up_date}</code>, <code>{follow_up_days}</code></div>
-            {{ settings_form.message_template }}
-            {% if settings_form.message_template.errors %}
-              <div class="text-danger small">{{ settings_form.message_template.errors|join:', ' }}</div>
-            {% endif %}
-          </div>
           <button type="submit" class="btn btn-success align-self-start">Save Settings</button>
         </form>
       </div>

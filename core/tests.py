@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import json
 from datetime import date, timedelta
 from unittest.mock import MagicMock, patch
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from .models import Client, WhatsAppFollowUp, WhatsAppMessageLog, WhatsAppSettings
@@ -41,6 +42,7 @@ class WhatsAppFollowUpModelTests(TestCase):
         )
 
 
+@override_settings(TWILIO_CONTENT_SID="HX1234567890abcdef")
 class WhatsAppSendTests(TestCase):
     def setUp(self) -> None:
         self.settings = WhatsAppSettings.load()
@@ -78,6 +80,19 @@ class WhatsAppSendTests(TestCase):
         self.assertEqual(log.status, WhatsAppMessageLog.Status.SENT)
         self.assertEqual(log.trigger, WhatsAppMessageLog.Trigger.MANUAL)
         mock_twilio_client.return_value.messages.create.assert_called_once()
+        kwargs = mock_twilio_client.return_value.messages.create.call_args.kwargs
+        self.assertEqual(kwargs["content_sid"], "HX1234567890abcdef")
+        variables = json.loads(kwargs["content_variables"])
+        self.assertEqual(
+            variables,
+            {
+                "1": "Bob",
+                "2": "Test Garage",
+                "3": "60",
+                "4": (timezone.localdate() - timedelta(days=60)).strftime("%B %d, %Y"),
+            },
+        )
+        self.assertNotIn("body", kwargs)
 
     def test_send_follow_up_without_phone_raises(self) -> None:
         client = Client.objects.create(name="Charlie", phone="")
