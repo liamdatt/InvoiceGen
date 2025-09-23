@@ -103,14 +103,23 @@ def send_follow_up_message(
         raise WhatsAppConfigurationError(
             "Twilio content template is not configured. Set TWILIO_CONTENT_SID in the environment."
         )
-    content_variables = json.dumps(
+    variable_map = getattr(
+        settings,
+        "TWILIO_CONTENT_VARIABLE_MAP",
         {
-            "1": context.get("client_name", ""),
-            "2": context.get("business_name", ""),
-            "3": context.get("days_since_service", ""),
-            "4": context.get("last_service_date", ""),
-        }
+            "1": "client_name",
+            "2": "business_name",
+            "3": "days_since_service",
+            "4": "last_service_date",
+        },
     )
+    prepared_variables: dict[str, str] = {}
+    for placeholder, context_key in (variable_map or {}).items():
+        key = str(placeholder)
+        value = context.get(str(context_key), "")
+        if value:
+            prepared_variables[key] = value
+    content_variables = json.dumps(prepared_variables)
     sender = None
     if not messaging_service_sid:
         sender = _sender_number()
