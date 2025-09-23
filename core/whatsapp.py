@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
+import json
+import re
 from typing import Any, Optional
 
 from django.conf import settings
@@ -86,19 +87,40 @@ def send_follow_up_message(
     settings_obj: Optional[WhatsAppSettings] = None,
 ) -> WhatsAppSendResult:
     settings_obj = settings_obj or WhatsAppSettings.load()
+    context = follow_up.message_context(settings=settings_obj)
     body = follow_up.build_message(settings=settings_obj)
     to_number = normalise_whatsapp_number(follow_up.client.phone)
     client = _twilio_client()
 
     # Optional delivery status callback URL
-    status_callback = getattr(settings, "TWILIO_STATUS_CALLBACK_URL", "").strip()
-    messaging_service_sid = getattr(settings, "TWILIO_MESSAGING_SERVICE_SID", "").strip()
+    status_callback = getattr(settings, "TWILIO_STATUS_CALLBACK_URL", None)
+    status_callback = (status_callback or "").strip()
+    messaging_service_sid = getattr(settings, "TWILIO_MESSAGING_SERVICE_SID", None)
+    messaging_service_sid = (messaging_service_sid or "").strip()
+    content_sid = getattr(settings, "TWILIO_CONTENT_SID", None)
+    content_sid = (content_sid or "").strip()
+    if not content_sid:
+        raise WhatsAppConfigurationError(
+            "Twilio content template is not configured. Set TWILIO_CONTENT_SID in the environment."
+        )
+    content_variables = json.dumps(
+        {
+            "1": context.get("client_name", ""),
+            "2": context.get("business_name", ""),
+            "3": context.get("days_since_service", ""),
+            "4": context.get("last_service_date", ""),
+        }
+    )
     sender = None
     if not messaging_service_sid:
         sender = _sender_number()
 
     try:
-        kwargs: dict[str, Any] = {"to": to_number, "body": body}
+        kwargs: dict[str, Any] = {
+            "to": to_number,
+            "content_sid": content_sid,
+            "content_variables": content_variables,
+        }
         if messaging_service_sid:
             kwargs["messaging_service_sid"] = messaging_service_sid
         else:
